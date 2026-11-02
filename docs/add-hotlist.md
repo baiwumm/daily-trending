@@ -43,4 +43,4 @@
 新榜单接入后自动纳入巡检，无需额外注册：`.github/workflows/health-check.yml` 每日 4 次（UTC 0/6/12/18）在 runner 上构建并启动生产服务，逐个请求本地回源的全部榜单 API。
 
 - 判定：HTTP 200 + `code=200` + `data` 非空数组；异常时自动创建/更新 tracking issue（label: `upstream-health`），全部恢复后自动关闭。
-- 巡检**不直连线上域名**——线上启用 Vercel Security Checkpoint，脚本类客户端会被 429 挑战页拦截（调试环境说明见 [development.md](./development.md)）。
+- 巡检**不直连线上域名**——线上多层缓存（CDN 边缘 / Next Data Cache）命中会返回旧数据，掩盖上游真实故障（调试环境说明见 [development.md](./development.md)）。

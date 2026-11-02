@@ -5,7 +5,7 @@
 ## 项目概览
 
 - **定位**：聚合微博、知乎、B 站、抖音、GitHub 等全网热门平台热榜的单页应用；纯聚合前端，无数据库、无自建后端，数据由 Next.js Route Handlers（`src/app/api/<platform>/route.ts`）在服务端抓取各平台上游接口，统一映射为 `HotListItem[]` 后返回客户端渲染
-- **仓库**：<https://github.com/baiwumm/daily-trending>；线上：<https://hot.baiwumm.com>（Vercel 部署）
+- **仓库**：<https://github.com/baiwumm/daily-trending>；线上：<https://hot.baiwumm.com>（EdgeOne Makers 部署）
 - **页面**：唯一业务页面 `src/app/page.tsx`，一次渲染全部榜单卡片（数据进入视口后按需拉取）
 
 ## 常用命令

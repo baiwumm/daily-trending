@@ -18,7 +18,7 @@
 ## 近期计划（P0）
 
 - **错误监控**
-  - 现状：只有访问统计（Vercel Analytics + 百度 / GA / Clarity），**没有错误上报**
+  - 现状：只有访问统计（百度 / GA / Clarity），**没有错误上报**
   - 候选：Sentry（免费档够用，Next.js 官方 SDK）或轻量自建（`errorResponse()` 失败路径埋点上报）
   - 接入后与健康巡检互补：巡检管「源挂没挂」，监控管「客户端报什么错」
 
@@ -32,7 +32,7 @@
 ## 已知技术债
 
 - **CI 只有发版门禁**：PR / push 无 lint/build 检查（单人开发可接受，协作前需补）
-- 多套统计并存（Vercel Analytics / 百度 / GA / Clarity），可评估收敛
+- 多套统计并存（百度 / GA / Clarity），可评估收敛
 - README 徽章由发版钩子同步 Next 版本，但 HeroUI 徽章仍是手写「3+」
 
 ## 暂不做（明确排除）

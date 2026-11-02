@@ -1,7 +1,7 @@
 name: Upstream Health Check
 
 # 上游源定时巡检：在 runner 上构建并启动生产服务，逐个请求本地回源的全部榜单 API。
-# 不直接打线上域名——线上启用 Vercel Security Checkpoint，脚本类客户端会被挑战页拦截（HTTP 429）。
+# 不直接打线上域名——线上多层缓存（CDN 边缘 / Next Data Cache）命中会返回旧数据，掩盖上游真实故障（HTTP 仍 200）。
 # 判定：HTTP 200 + code=200 + data 非空数组；异常时创建/更新 tracking issue（label: upstream-health），
 # 全部恢复后自动关闭。巡检结果写 Step Summary，脚本恒以 0 退出，避免失败运行刷红 Actions 历史。
 # 每日 4 次（UTC 0/6/12/18 = 东八区 8/14/20/2 点）；GitHub 定时触发可能有分钟级延迟，属正常。

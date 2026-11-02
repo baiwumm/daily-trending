@@ -7,21 +7,18 @@
  */
 'use client'
 
-import type { HotValue } from '@/config/hot-list'
 import type { HotListItem } from '@/types'
 
 import { Tooltip } from '@heroui/react'
-import { track } from '@vercel/analytics'
 import { memo, useEffect, useRef, useState } from 'react'
 
 import { useIsMobile } from '@/hooks/use-is-mobile'
 
 interface OverflowDetectorProps {
   record: HotListItem
-  type: HotValue
 }
 
-const OverflowDetector = memo(function OverflowDetector({ record, type }: OverflowDetectorProps) {
+const OverflowDetector = memo(function OverflowDetector({ record }: OverflowDetectorProps) {
   const ref = useRef<HTMLAnchorElement>(null)
 
   // 判断是否是移动端
@@ -29,11 +26,6 @@ const OverflowDetector = memo(function OverflowDetector({ record, type }: Overfl
 
   // 内容是否溢出
   const [isOverflowing, setIsOverflowing] = useState(false)
-
-  // 点击标题上报
-  const handleTitle = () => {
-    track(type)
-  }
 
   // 只在组件挂载时检测一次 overflow
   useEffect(() => {
@@ -61,7 +53,6 @@ const OverflowDetector = memo(function OverflowDetector({ record, type }: Overfl
           href={isMobile ? record.mobileUrl : record.url}
           rel="noopener noreferrer"
           target="_blank"
-          onClick={handleTitle}
         >
           {record.title}
         </a>

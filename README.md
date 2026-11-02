@@ -84,13 +84,13 @@ http://localhost:3000
 
 端点 `value` 与上游平台的对应关系以 `src/config/hot-list.tsx` 的 `hotItemsConfig` 为准（唯一数据源）；`value` 即 `src/app/api/<value>/route.ts` 的目录名。
 
-> ⚠️ 线上站点当前启用 Vercel Security Checkpoint：脚本 / 服务端直连 `https://hot.baiwumm.com/api/*` 会返回 429 挑战页（与 UA 无关）。接口调试请使用本地构建服务（`pnpm build && pnpm start` 后访问 `http://127.0.0.1:3000`）。
+> ⚠️ 线上接口可被脚本 / curl 直连（无挑战页拦截），但响应可能命中缓存返回旧数据（URL 加 `?t=` 可绕过）。反复调试接口请走本地构建服务（`pnpm build && pnpm start` 后访问 `http://127.0.0.1:3000`），避免高频回源触发上游风控。
 
-### 🚀 Vercel 一键部署
+### 🚀 部署（EdgeOne Makers）
 
-[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https://github.com/baiwumm/daily-trending)
+站点部署在腾讯云 **EdgeOne Makers**：控制台导入 GitHub 仓库后零配置识别 Next.js 构建，推送到 `main` 即自动发布生产；也可用 `edgeone` CLI 本地部署。
 
-默认使用仓库内已提交的 `.env` 构建；仅当需自定义站点信息或缓存窗口时，才在 **Vercel Project Settings → Environment Variables** 中覆盖配置。环境变量参考：[.env](./.env)
+默认使用仓库内已提交的 `.env` 构建；仅当需自定义站点信息或缓存窗口时，才在 **EdgeOne Makers 控制台 → 项目设置 → 环境变量** 中覆盖配置。环境变量参考：[.env](./.env)
 
 ### ⭐ 支持项目
 <div align="center">

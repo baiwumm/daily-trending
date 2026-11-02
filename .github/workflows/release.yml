@@ -14,7 +14,7 @@ name: Release
 #   · .env 已提交，build 无需注入密钥；权限仅 contents: write，最小化授权；
 #   · release-it 以 GITHUB_TOKEN 推送提交与 tag 并创建 Release，提交作者为 github-actions[bot]，
 #     由 GITHUB_TOKEN 触发的推送不会连带触发其他 workflow（另一个 Upstream Health Check 仅定时/手动触发）；
-#   · 发版提交推上 main 后，Vercel 自动跟随部署生产环境。
+#   · 发版提交推上 main 后，EdgeOne Makers 自动跟随部署生产环境。
 #
 # 本地仍可 `pnpm release`（需本地 GITHUB_TOKEN），与 CI 共用 .release-it.json，行为一致。
 

@@ -13,7 +13,7 @@
    - 方式 B：命令行 `gh workflow run release.yml -f bump=minor`（自定义版本号用 `-f version=v<版本号>`，填写后覆盖 bump）。
 2. CI 先跑 `pnpm lint` + `pnpm build` 预检，**任一失败即中止、不产生任何提交**。
 3. 通过后由 release-it 一次性完成：版本号 → CHANGELOG.md → `chore: Release v${version}` 提交 → tag → GitHub Release（提交作者为 github-actions[bot]）。
-4. 发版提交推上 main 后 Vercel 自动部署生产；本地 `git pull --ff-only` 同步 Release 提交。
+4. 发版提交推上 main 后 EdgeOne Makers 自动部署生产；本地 `git pull --ff-only` 同步 Release 提交。
 
 ## 版本规则
 

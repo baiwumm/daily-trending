@@ -11,7 +11,6 @@ import './globals.css'
 import type { Metadata } from 'next'
 
 import { Toast } from '@heroui/react'
-import { Analytics } from '@vercel/analytics/next'
 import { ThemeProvider as NextThemesProvider } from 'next-themes'
 
 import { BaiDuAnalytics, GoogleUtilities, MicrosoftClarity } from '@/components/Analytics'
@@ -94,8 +93,6 @@ export default function RootLayout({
         <BaiDuAnalytics />
         <GoogleUtilities />
         <MicrosoftClarity />
-        {/* Vercel Analytics */}
-        <Analytics />
       </body>
     </html>
   )

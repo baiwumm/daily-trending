@@ -5,7 +5,6 @@
  * @LastEditTime: 2026-07-31 17:33:53
  * @Description: 动态列表子项
  */
-import type { HotValue } from '@/config/hot-list'
 import type { HotListItem } from '@/types'
 import type { ReactNode } from 'react'
 
@@ -18,7 +17,6 @@ import { formatNumber, hotLabelColor, hotTagColor } from '@/lib/utils'
 interface RowData {
   index: number
   data: HotListItem[]
-  value: HotValue
   /** 排名趋势：标题 → 名次变化（正数上升 / 负数下降 / 0 持平）；null 表示无对比基准 */
   trends?: Record<string, number> | null
   /** 搜索跳转高亮的行号（仅命中行收到非 null 值，配合行级 memo 避免整卡重渲染） */
@@ -38,7 +36,7 @@ function HotDisplay({ value, prefix, suffix }: { value: string | number; prefix?
 }
 
 // Vercel 最佳实践：虚拟列表行组件用 memo，避免滚动/数据更新时无关行重渲染
-const HotListRow = memo(function HotListRow({ index, data, value, trends, highlightIndex, prefix, suffix }: RowData) {
+const HotListRow = memo(function HotListRow({ index, data, trends, highlightIndex, prefix, suffix }: RowData) {
   const item = data[index]
   const { label, title } = item
 
@@ -92,7 +90,7 @@ const HotListRow = memo(function HotListRow({ index, data, value, trends, highli
         <div className="text-xs size-6 rounded shrink-0 flex items-center justify-center" style={colorStyle}>
           {displayText}
         </div>
-        <OverflowDetector record={item} type={value} />
+        <OverflowDetector record={item} />
       </div>
       {endContent}
     </div>

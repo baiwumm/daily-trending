@@ -210,14 +210,7 @@ function HotCard({ value, label, tip, prefix, suffix }: HotListConfig) {
             </Description>
           ) : (
             <BlurFade className="h-full pl-3">
-              <HotListVirtual
-                data={data}
-                highlight={highlightIndex}
-                prefix={prefix}
-                suffix={suffix}
-                trends={trends}
-                value={value}
-              />
+              <HotListVirtual data={data} highlight={highlightIndex} prefix={prefix} suffix={suffix} trends={trends} />
             </BlurFade>
           )}
         </ScrollShadow>

@@ -2,7 +2,7 @@
  * @description: 上游源健康巡检（GitHub Actions 定时任务调用）
  * 对本机构建启动的生产服务逐个请求全部榜单 API，判定「HTTP 200 + code=200 + data 非空数组」为健康；
  * 结果写入 GitHub Step Summary，并在 Actions 环境中自动开/更新跟踪 issue，全部恢复后自动关闭。
- * 巡检走本地回源而非线上域名：线上启用 Vercel Security Checkpoint，脚本类客户端会被挑战页拦截。
+ * 巡检走本地回源而非线上域名：线上多层缓存（CDN 边缘 / Next Data Cache）命中会返回旧数据，掩盖上游真实故障。
  * 分批限流 + 失败重试：runner 出口是共享数据中心 IP，30 路并发突发会触发快手/网易等上游风控，
  * 产生随机误报（失败集合逐次漂移）；失败响应 no-store 不落缓存，重试是真实回源。
  * 无论巡检结果如何都以 0 退出——异常信号由 issue 与 Summary 承载，避免每次失败都产生红色运行记录。

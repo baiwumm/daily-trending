@@ -47,5 +47,5 @@
 ## 生成物与本地调试
 
 - `.heroui-docs/`、`next-env.d.ts`、`.next/` 为工具/构建生成，勿手工编辑、勿提交。
-- **线上域名当前启用 Vercel Security Checkpoint**：脚本/curl 直连 `hot.baiwumm.com/api/*` 会拿到 429 挑战页（与 UA 无关），服务端巡检或接口调试请走本地构建服务（`pnpm build && pnpm start` 后访问 `127.0.0.1:3000`）；若日后关闭该模式可恢复直连。
+- **线上部署在 EdgeOne Makers**：脚本/curl 直连 `hot.baiwumm.com/api/*` 不会被挑战页拦截，但响应可能命中缓存返回旧数据（URL 加 `?t=` 绕过）；服务端巡检与反复接口调试仍建议走本地构建服务（`pnpm build && pnpm start` 后访问 `127.0.0.1:3000`），避免高频回源触发上游风控。
 - README 的 Next 徽章为发版钩子自动同步，机制见 [release.md](./release.md)。

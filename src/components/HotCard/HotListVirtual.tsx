@@ -1,4 +1,3 @@
-import type { HotValue } from '@/config/hot-list'
 import type { HotListItem } from '@/types'
 
 import { ArrowDown } from '@gravity-ui/icons'
@@ -10,14 +9,12 @@ import HotListRow from './HotListRow'
 
 export default function HotListVirtual({
   data,
-  value,
   prefix,
   suffix,
   trends,
   highlight,
 }: {
   data: HotListItem[]
-  value: HotValue
   prefix?: React.ReactNode
   suffix?: React.ReactNode
   trends?: Record<string, number> | null
@@ -91,7 +88,6 @@ export default function HotListVirtual({
                   prefix={prefix}
                   suffix={suffix}
                   trends={trends}
-                  value={value}
                 />
               </div>
             )

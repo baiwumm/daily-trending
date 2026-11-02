@@ -15,7 +15,7 @@
 | 状态 | zustand（`persist` 中间件 → localStorage） |
 | 请求 | 服务端原生 `fetch`（经 `src/lib/request.ts` 封装）；客户端自研 `useRequest`（`src/hooks/use-request.ts`，**无** axios/SWR/ahooks） |
 | 解析/工具 | cheerio（HTML 解析）、lunar-typescript（农历）、@tanstack/react-virtual（长列表虚拟滚动）、@dnd-kit（卡片拖拽排序） |
-| 统计 | @vercel/analytics + 百度统计 + Google Analytics + Clarity（`src/components/Analytics`） |
+| 统计 | 百度统计 + Google Analytics + Clarity（`src/components/Analytics`） |
 | 工程 | pnpm、ESLint（flat config）+ Prettier、release-it 发版（GitHub Actions 一键发版，见 [release.md](./release.md)） |
 
 无测试框架；`pnpm build` 内含类型检查；发版 workflow 内置 lint + build 门禁，但无 PR 级 CI——提交前仍需自查 `pnpm lint` + `pnpm build`。

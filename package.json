@@ -30,7 +30,6 @@
     "@next/third-parties": "^16.4.0",
     "@number-flow/react": "^0.6.2",
     "@tanstack/react-virtual": "^3.14.12",
-    "@vercel/analytics": "^2.0.1",
     "cheerio": "^1.2.0",
     "lunar-typescript": "^1.8.6",
     "motion": "^12.43.0",
