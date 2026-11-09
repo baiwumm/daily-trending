@@ -32,7 +32,7 @@
     "@tanstack/react-virtual": "^3.14.26",
     "cheerio": "^1.2.0",
     "lunar-typescript": "^1.8.7",
-    "motion": "^12.43.0",
+    "motion": "^14.10.1",
     "next": "16.4.5",
     "next-themes": "^0.4.6",
     "react": "19.3.1",
@@ -44,7 +44,7 @@
     "@eslint/compat": "^2.1.1",
     "@eslint/eslintrc": "^3.3.7",
     "@eslint/js": "^10.0.1",
-    "@release-it/conventional-changelog": "^11.0.1",
+    "@release-it/conventional-changelog": "^12.0.2",
     "@tailwindcss/postcss": "^4.3.5",
     "@types/node": "^26.6.6",
     "@types/react": "^19.3.0",
@@ -61,7 +61,7 @@
     "eslint-plugin-unused-imports": "^4.4.1",
     "globals": "^17.14.0",
     "prettier": "^3.9.10",
-    "release-it": "^20.2.1",
+    "release-it": "^21.1.2",
     "tailwindcss": "^4.3.5",
     "typescript": "^6.0.3"
   }
