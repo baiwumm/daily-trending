@@ -25,11 +25,11 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 15 # 极端情况（全部源超时 × 3 次重试）的余量
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
-      - uses: pnpm/action-setup@v4 # 版本取自 package.json 的 packageManager 字段
+      - uses: pnpm/action-setup@v6 # 版本取自 package.json 的 packageManager 字段
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v7
         with:
           node-version: 22
           cache: pnpm
