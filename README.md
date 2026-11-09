@@ -3,7 +3,7 @@
   <h1>今日热榜</h1>
   <p align="center">看看全网都在聊什么</p>
   <p align="center">
-    <img src="https://img.shields.io/badge/Next-16.4.0-black?style=flat&logo=Next.js" alt="Next.js">
+    <img src="https://img.shields.io/badge/Next-16.4.5-black?style=flat&logo=Next.js" alt="Next.js">
     <img src="https://img.shields.io/badge/HeroUI-3+-000000?style=flat&logo=HEROui&logoColor=white" alt="HeroUI"/>
     <img src="https://img.shields.io/github/stars/baiwumm/daily-trending?style=social" alt="GitHub stars" />
     <img src="https://img.shields.io/github/forks/baiwumm/daily-trending?style=social" alt="GitHub forks" />

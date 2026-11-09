@@ -1,5 +1,33 @@
 # Changelog
 
+## [3.13.2](https://github.com/baiwumm/daily-trending/compare/v3.13.1...v3.13.2) (2026-11-09)
+
+### 🐛 Bug Fixes | Bug 修复
+
+* 429 限流响应不再自动重试，避免前端重试放大请求 ([f1c2062](https://github.com/baiwumm/daily-trending/commit/f1c206207d9552c9a4bb789ce947ae7e824d5b99))
+
+### 🎫 Chores | 其他更新
+
+* **deps:** 升级 next 至 16.4.5 ([#42](https://github.com/baiwumm/daily-trending/issues/42)) ([037c483](https://github.com/baiwumm/daily-trending/commit/037c4837e715dcbf07e27479b3b447401f765832))
+* 删除 pnpm-workspace.yaml 已失效的配置条目 ([130d44f](https://github.com/baiwumm/daily-trending/commit/130d44fe870751b6400fffb7ce31857f2a521eb7))
+* 批量升级依赖到最新兼容版本 ([f66f4ee](https://github.com/baiwumm/daily-trending/commit/f66f4ee54105dfa97684dc73d5e8766ad3227a03))
+* 清理 Vercel 遗留配置与埋点，文档同步 EdgeOne Makers 部署 ([2beaf3b](https://github.com/baiwumm/daily-trending/commit/2beaf3b2ed7520fb46a86dce8d2e3b5e6992c189))
+
+### 📝 Documentation | 文档
+
+* AGENTS.md 硬性规则改正面表述，修复悬空指针与「三层同源」术语漂移 ([733e383](https://github.com/baiwumm/daily-trending/commit/733e383e9ca8b5c603d83e4c38c0ff25877a8035))
+* AGENTS.md 精简为入口索引，开发规范拆分至 docs/ 任务分册 ([eb1f35b](https://github.com/baiwumm/daily-trending/commit/eb1f35b110fb13d67fc95e9dc4605a3fd5b1810c))
+* 精简 README 宣传片字幕与开放 API 冗余段落 ([520344c](https://github.com/baiwumm/daily-trending/commit/520344c589aeac6cf3cbee2f54da3758d9c92f96))
+* 规范 README 与 docs 文档体系，修正发版版本规则等过时表述 ([b03b7dd](https://github.com/baiwumm/daily-trending/commit/b03b7dd5d62569fa8245c03d4a628871fb736afa))
+
+### ♻ Code Refactoring | 代码重构
+
+* 修正 hotLableColor 变量拼写（Lable → Label） ([df5b3ed](https://github.com/baiwumm/daily-trending/commit/df5b3ed5fb052bce8de863946b7bb928a3dcb815))
+
+### 🔧 Continuous Integration | CI 配置
+
+* GitHub Actions 升级到 Node 24 运行时版本 ([5023868](https://github.com/baiwumm/daily-trending/commit/5023868a42c63a6fb2a551f7448a4491c77d68fa))
+
 ## [3.13.1](https://github.com/baiwumm/daily-trending/compare/v3.13.0...v3.13.1) (2026-10-10)
 
 ### 🐛 Bug Fixes | Bug 修复
