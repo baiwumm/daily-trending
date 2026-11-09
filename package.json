@@ -1,6 +1,6 @@
 {
   "name": "daily-trending",
-  "version": "3.13.2",
+  "version": "3.13.3",
   "private": true,
   "packageManager": "pnpm@11.24.0",
   "author": {

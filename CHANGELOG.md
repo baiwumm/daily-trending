@@ -1,5 +1,20 @@
 # Changelog
 
+## [3.13.3](https://github.com/baiwumm/daily-trending/compare/v3.13.2...v3.13.3) (2026-11-09)
+
+### 🎫 Chores | 其他更新
+
+* **deps:** 升级 motion 至 14.10.1、release-it 至 21.1.2 ([8599c53](https://github.com/baiwumm/daily-trending/commit/8599c5383154a16d2bfea5fe44e2d203780aa7b3))
+
+### 📝 Documentation | 文档
+
+* 同步 lib 目录说明（fetchBuffer / author） ([5c01aa4](https://github.com/baiwumm/daily-trending/commit/5c01aa4241fe8700dc9d31223680689f857e5aa5))
+
+### ♻ Code Refactoring | 代码重构
+
+* Footer 改为服务端组件并将三列断点移至 xl ([eeec095](https://github.com/baiwumm/daily-trending/commit/eeec0953365218a496f4cded3e3107a3a84f9003))
+* 作者信息改为从 package.json 与 GitHub 账户自动获取 ([9dd3113](https://github.com/baiwumm/daily-trending/commit/9dd311377ff588c10fdc29ea18788069016067eb))
+
 ## [3.13.2](https://github.com/baiwumm/daily-trending/compare/v3.13.1...v3.13.2) (2026-11-09)
 
 ### 🐛 Bug Fixes | Bug 修复
