@@ -17,8 +17,6 @@
 
 <div align="center">
   <video src="https://github.com/user-attachments/assets/0baa9203-9d6d-4ae1-8b43-e1dfcf36a7b4" width="90%" controls muted playsinline></video>
-  <br />
-  <sub>带中文口播与中英字幕（附件载体见 <a href="https://github.com/baiwumm/daily-trending/issues/20">#20</a>，请勿删除）</sub>
 </div>
 
 ### 🚀 特性
@@ -79,12 +77,6 @@ http://localhost:3000
   "timestamp": 1791500000000
 }
 ```
-
-接口恒返回 HTTP 200，成功/失败以 body 的 `code` 区分：`code` 为 200 成功，CDN 默认缓存 300 秒（可经 `NEXT_PUBLIC_HOT_CACHE_SECONDS` 调整），URL 加 `?t=` 时间戳可绕过；`code` 为 500 失败，不缓存。`timestamp` 为数据更新时间。
-
-端点 `value` 与上游平台的对应关系以 `src/config/hot-list.tsx` 的 `hotItemsConfig` 为准（唯一数据源）；`value` 即 `src/app/api/<value>/route.ts` 的目录名。
-
-> ⚠️ 线上接口可被脚本 / curl 直连（无挑战页拦截），但响应可能命中缓存返回旧数据（URL 加 `?t=` 可绕过）。反复调试接口请走本地构建服务（`pnpm build && pnpm start` 后访问 `http://127.0.0.1:3000`），避免高频回源触发上游风控。
 
 ### 🚀 部署（EdgeOne Makers）
 
