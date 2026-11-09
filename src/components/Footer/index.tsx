@@ -12,6 +12,7 @@ import { Chip, cn, Description, Link, Separator } from '@heroui/react'
 import Image from 'next/image'
 import { useState } from 'react'
 
+import { AUTHOR_HANDLE } from '@/lib/author'
 import pkg from '#/package.json'
 
 interface Social {
@@ -68,7 +69,7 @@ export default function Footer() {
           rel="noopener noreferrer"
           target="_blank"
         >
-          {process.env.NEXT_PUBLIC_AUTHOR_NAME}
+          {AUTHOR_HANDLE}
         </a>
         . All rights reserved.
       </Description>

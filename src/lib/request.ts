@@ -85,6 +85,19 @@ export async function fetchText(url: string, init: RequestInitLike = {}): Promis
 }
 
 /**
+ * 统一 GET 请求并返回二进制（图片等），与 fetchJson / fetchText 共用 UA、超时与缓存策略
+ */
+export async function fetchBuffer(url: string, init: RequestInitLike = {}): Promise<ArrayBuffer> {
+  const response = await fetchWithDefaults(url, init)
+
+  if (!response.ok) {
+    throw new Error(`上游请求失败：${response.status} ${url}`)
+  }
+
+  return response.arrayBuffer()
+}
+
+/**
  * 组装请求头：
  * - 未显式设置 User-Agent 时注入默认 Chrome UA
  * - 显式传 'User-Agent': '' 表示不发送 UA 头（个别上游对桌面 UA 返回反爬页）

@@ -36,7 +36,7 @@
 
 ## 环境与依赖
 
-- **`.env` 已提交到仓库**（`.gitignore` 以 `!.env` 反选纳入版本控制），全部为 `NEXT_PUBLIC_*` 公开变量：站点名称/描述/URL、作者信息、ICP/公安备案号、百度/Google/Clarity 统计 ID。`layout.tsx` 的 metadata 在构建期内联读取这些值——缺失时构建不报错，但站点标题/描述/统计 ID 为空。
+- **`.env` 已提交到仓库**（`.gitignore` 以 `!.env` 反选纳入版本控制），全部为 `NEXT_PUBLIC_*` 公开变量：站点名称/描述/URL、ICP/公安备案号、百度/Google/Clarity 统计 ID。作者展示信息不进环境变量：由 `src/lib/author.ts` 从 package.json 仓库地址取 GitHub 用户名，并从 GitHub 账户拉取 bio 与头像（缓存一天）。`layout.tsx` 的 metadata 在构建期内联读取这些值——缺失时构建不报错，但站点标题/描述/统计 ID 为空。
 - **新私密变量走 `.env.local`**（`.env.*` 被 ignore），命名大写下划线；服务端专用变量不加 `NEXT_PUBLIC_` 前缀。禁止提交 `.env.local` 或任何私密密钥。
 - 可选变量：`NEXT_PUBLIC_HOT_CACHE_SECONDS` 覆盖缓存窗口（60~3600 秒，默认 300；越界收敛到边界值，非法值回退默认）；改动缓存窗口须三层同源评估（定义见 [architecture.md](./architecture.md) 架构要点）。
 - **无数据库、无后端服务**；唯一外部依赖是各平台上游接口（反爬与抓取规范见 [add-hotlist.md](./add-hotlist.md)）。

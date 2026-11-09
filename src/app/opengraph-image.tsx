@@ -3,6 +3,9 @@ import { extname, join } from 'node:path'
 
 import { ImageResponse } from 'next/og'
 
+import { getGithubAuthor } from '@/lib/author'
+import { fetchBuffer } from '@/lib/request'
+
 export const alt = process.env.NEXT_PUBLIC_APP_DESC
 export const size = {
   width: 1200,
@@ -14,8 +17,6 @@ const APP_URL = process.env.NEXT_PUBLIC_APP_URL || 'https://hot.baiwumm.com'
 const APP_NAME = process.env.NEXT_PUBLIC_APP_NAME || '今日热榜'
 const APP_DESC = process.env.NEXT_PUBLIC_APP_DESC || '看看全网都在聊什么'
 const APP_HOST = APP_URL.replace(/^https?:\/\//, '').replace(/\/$/, '')
-const AUTHOR_NAME = process.env.NEXT_PUBLIC_AUTHOR_NAME || '白雾茫茫丶'
-const AUTHOR_ROLE = process.env.NEXT_PUBLIC_AUTHOR_ROLE || '独立开发者'
 const TECH_TAGS = ['React', 'Next.js', 'HeroUI', 'Tailwind CSS']
 
 const ASSET_MIME_TYPES: Record<string, string> = {
@@ -31,7 +32,10 @@ const previewAsset = publicAssetToDataUrl('light.png')
 const avatarAsset = publicAssetToDataUrl('avatar.jpg')
 
 export default async function OpenGraphImage() {
-  const [logoUrl, previewUrl, avatarUrl] = await Promise.all([logoAsset, previewAsset, avatarAsset])
+  const [logoUrl, previewUrl, author] = await Promise.all([logoAsset, previewAsset, getGithubAuthor()])
+  const avatarUrl = await resolveAuthorAvatar(author.avatarUrl)
+  // Satori 没有 emoji 字形，bio 里的 emoji 会渲染成空白块
+  const authorBio = (author.bio ?? '').replace(/[\p{Extended_Pictographic}\uFE0F\u200D]/gu, '').trim()
 
   return new ImageResponse(
     <div
@@ -180,7 +184,7 @@ export default async function OpenGraphImage() {
               }}
             >
               <img
-                alt={AUTHOR_NAME}
+                alt={author.name}
                 height={48}
                 src={avatarUrl}
                 style={{
@@ -206,16 +210,18 @@ export default async function OpenGraphImage() {
                   color: '#1A1A1A',
                 }}
               >
-                {AUTHOR_NAME}
+                {author.name}
               </span>
-              <span
-                style={{
-                  fontSize: 14,
-                  color: '#666666',
-                }}
-              >
-                {AUTHOR_ROLE}
-              </span>
+              {authorBio && (
+                <span
+                  style={{
+                    fontSize: 14,
+                    color: '#666666',
+                  }}
+                >
+                  {authorBio}
+                </span>
+              )}
             </div>
           </div>
         </div>
@@ -341,6 +347,17 @@ export default async function OpenGraphImage() {
       ...size,
     },
   )
+}
+
+// 头像优先取 GitHub 账户图（缓存一天），失败回退仓库内 avatar.jpg
+async function resolveAuthorAvatar(avatarUrl: string) {
+  try {
+    const buffer = await fetchBuffer(avatarUrl, { next: { revalidate: 86400 } })
+
+    return `data:image/png;base64,${Buffer.from(buffer).toString('base64')}`
+  } catch {
+    return avatarAsset
+  }
 }
 
 async function publicAssetToDataUrl(filename: string) {
