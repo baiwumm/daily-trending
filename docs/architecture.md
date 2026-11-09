@@ -36,7 +36,8 @@ src/
 │   └── response.ts         # 响应码 + API_CACHE_SECONDS 缓存窗口
 ├── hooks/                  # use-request.ts（自研 useRequest）、use-is-mobile 等
 ├── lib/
-│   ├── request.ts          # 上游请求公共层：fetchJson / fetchText（统一 UA、15s 超时、revalidate）
+│   ├── request.ts          # 上游请求公共层：fetchJson / fetchText / fetchBuffer（统一 UA、15s 超时、revalidate）
+│   ├── author.ts           # 作者身份单一来源：仓库地址取 GitHub 用户名，bio/头像走 GitHub API（缓存一天）
 │   ├── response.ts         # successResponse / errorResponse（统一 IResponse + CDN 缓存头 + 出口数据消毒）
 │   ├── utils.ts            # fromNow / formatNumber 等纯工具
 │   └── weread.ts / miyoushe.ts 等  # 特殊平台算法（微信读书书籍 ID、米游社等），新算法也放这里
