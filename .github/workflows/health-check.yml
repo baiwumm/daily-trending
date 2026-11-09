@@ -22,7 +22,8 @@ concurrency:
 jobs:
   check:
     name: Build & Check
-    runs-on: ubuntu-latest
+    # ubuntu-latest 将于 2026-10 起迁移到 Ubuntu 26，固定版本避免运行环境漂移
+    runs-on: ubuntu-24.04
     timeout-minutes: 15 # 极端情况（全部源超时 × 3 次重试）的余量
     steps:
       - uses: actions/checkout@v7
