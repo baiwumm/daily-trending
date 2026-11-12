@@ -23,7 +23,6 @@ const hotItemsConfig = [
   {
     category: '社区讨论',
     children: [
-      { value: 'xiaohongshu', label: '小红书', tip: '实时热榜' },
       { value: 'zhihu', label: '知乎', tip: '热榜' },
       { value: 'baidutieba', label: '百度贴吧', tip: '热议榜' },
       { value: 'hupu', label: '虎扑', tip: '步行街热帖', suffix: '亮' },
