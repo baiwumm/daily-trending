@@ -33,7 +33,7 @@ src/
 ├── components/             # PascalCase 目录 + index.tsx；核心：HotCard（含 HotListVirtual）/ HotSettings / HotSearch / Sortable，其余为布局与功能组件
 ├── config/
 │   ├── hot-list.tsx        # HOT_ITEMS：全部榜单配置唯一数据源（分类/平台数量以此为准）
-│   └── response.ts         # 响应码 + API_CACHE_SECONDS 缓存窗口
+│   └── response.ts         # 响应码 + 缓存窗口（API_CACHE_SECONDS 服务端 / CLIENT_COOLDOWN_SECONDS 客户端冷却）
 ├── hooks/                  # use-request.ts（自研 useRequest）、use-is-mobile 等
 ├── lib/
 │   ├── request.ts          # 上游请求公共层：fetchJson / fetchText / fetchBuffer（统一 UA、15s 超时、revalidate）
@@ -64,7 +64,7 @@ scripts/                    # Node 工具脚本（release-it 钩子、健康巡�
 ## 架构要点
 
 - **新增一个榜单 = 两步**：① `src/config/hot-list.tsx` 的 `hotItemsConfig` 在对应分类的 `children` 里加一行；② 新建 `src/app/api/<value>/route.ts`。完整步骤与上游抓取规范见 [add-hotlist.md](./add-hotlist.md)。
-- **缓存三层同源**：服务端 fetch `revalidate` = CDN `s-maxage` = 客户端刷新冷却，全部取自 `API_CACHE_SECONDS`（`src/config/response.ts`，默认 300 秒，可用 `NEXT_PUBLIC_HOT_CACHE_SECONDS` 覆盖）；改动缓存策略须三层一起评估。
+- **缓存分层**：服务端 fetch `revalidate` = CDN `s-maxage`，同取 `API_CACHE_SECONDS`（`src/config/response.ts`，代码默认 300 秒、仓库 `.env` 设 1800 秒，可用 `NEXT_PUBLIC_HOT_CACHE_SECONDS` 覆盖）；客户端刷新冷却另取 `CLIENT_COOLDOWN_SECONDS`（固定 300 秒），只管「多久能再手动强刷」，不参与服务端缓存。两者刻意解耦：放大服务端窗口只降上游请求与边缘函数调用量，不削弱手动强刷能力（强刷走 `?t=` 绕过全部缓存层，始终拿最新数据）；客户端冷却保持短窗口则保证用户随时能主动刷到实时数据。改服务端窗口时须同步评估客户端展示与搜索索引的过期口径（搜索索引跟随服务端窗口）。
 - **响应契约**：HTTP 层恒为 200，业务结果以 body 的 `code` 区分；`IResponse { code, msg, data?, timestamp }` 固定，成功 `code=200`（可缓存），失败 `code=500` 且 `no-store`（避免错误被缓存）。前端依赖 `timestamp` 显示更新时间，勿改语义。
 - **客户端状态**：`useAppStore`（zustand persist）。改持久化结构必须递增 `version` 并补 `migrate`；`now/tick` 心跳是派生基准，不持久化。相对时间与刷新冷却共用同一时钟保证自洽。
 - **动画约束**：首页卡片网格的 FLIP 重排动画由**子级** `motion.div` 的 `layout` 承担；父级 grid 容器只承载 variants，**不要开启 `layout`**——父级变换补偿会在网格重排时叠加错位（见 `page.tsx` 注释）。

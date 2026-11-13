@@ -36,7 +36,7 @@
   - 个别站点对桌面 UA 返回反爬页，传 `'User-Agent': ''` 显式移除 UA。
 - **页面编码**：`fetchText` 默认按 UTF-8 解码；GBK / GB18030 等非 UTF-8 页面显式传 `encoding`（参考 `gp`、`jjwxc` 路由），否则中文乱码。
 - **上游挂掉属常态**：走 `errorResponse()` 返回，前端已处理空数据与错误态；失败响应已由 `errorResponse` 置 `no-store`，保持该行为。
-- 改缓存窗口须三层同源评估（定义见 [architecture.md](./architecture.md) 架构要点）。
+- 改缓存窗口须评估服务端窗口（`API_CACHE_SECONDS`）与客户端冷却（`CLIENT_COOLDOWN_SECONDS`）的分层影响（定义见 [architecture.md](./architecture.md) 架构要点）。
 
 ## 上游健康巡检
 

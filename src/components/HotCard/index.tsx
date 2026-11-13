@@ -17,7 +17,7 @@ import HotListVirtual from './HotListVirtual'
 
 import BlurFade from '@/components/BlurFade'
 import SkeletonCard from '@/components/SkeletonCard'
-import { API_CACHE_SECONDS, RESPONSE } from '@/config/response'
+import { CLIENT_COOLDOWN_SECONDS, RESPONSE } from '@/config/response'
 import { FatalRequestError, useRequest } from '@/hooks/use-request'
 import { smoothScrollTo } from '@/lib/utils'
 import { useAppStore } from '@/store/useAppStore'
@@ -39,11 +39,11 @@ function HotCard({ value, label, tip, prefix, suffix }: HotListConfig) {
   const now = useAppStore((state) => state.now)
   // 已过分钟数（与"x 分钟前更新"的 fromNow 同源同取整，保证显示自洽）
   const elapsedMin = updateTime ? Math.round((now - updateTime) / 60_000) : 0
-  // 剩余分钟 = 缓存窗口 - 已过分钟（两者相加恒等于缓存窗口）
-  const remainMin = Math.round(API_CACHE_SECONDS / 60) - elapsedMin
+  // 剩余分钟 = 刷新冷却 - 已过分钟（两者相加恒等于冷却窗口）
+  const remainMin = Math.round(CLIENT_COOLDOWN_SECONDS / 60) - elapsedMin
   // 精确冷却判断（毫秒）：冷却结束才恢复可刷新
   // 注意：isCooldown 需在 useRequest 之后基于 error 计算（失败时允许立即重试）
-  const cooldownMs = updateTime ? API_CACHE_SECONDS * 1000 - (now - updateTime) : 0
+  const cooldownMs = updateTime ? CLIENT_COOLDOWN_SECONDS * 1000 - (now - updateTime) : 0
 
   // 手动刷新时绕过 CDN 缓存（URL 加时间戳），自动加载走缓存
   const bypassCacheRef = useRef(false)
