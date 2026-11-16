@@ -1,0 +1,13 @@
+{
+  "headers": [
+    {
+      "source": "/api/*",
+      "headers": [
+        {
+          "key": "Vary",
+          "value": "Accept-Encoding"
+        }
+      ]
+    }
+  ]
+}

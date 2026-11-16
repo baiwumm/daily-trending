@@ -192,7 +192,7 @@ function HotSearch() {
 
         if (controller.signal.aborted) return
 
-        // 空数据与失败响应（no-store）都不进索引
+        // 空数据与失败响应（60s 短缓存）都不进索引
         if (result.code !== 200 || !result.data?.length) return
 
         fetchedRef.current.add(value)

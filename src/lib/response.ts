@@ -9,11 +9,15 @@ import { API_CACHE_SECONDS, RESPONSE } from '@/config/response'
  * 均取自 API_CACHE_SECONDS，stale-while-revalidate 平滑刷新
  */
 const CACHE_HEADERS = { 'Cache-Control': `public, s-maxage=${API_CACHE_SECONDS}, stale-while-revalidate=60` }
-/** 失败响应不缓存，避免错误被长时间缓存 */
-const NO_STORE_HEADERS = { 'Cache-Control': 'no-store' }
+/**
+ * 失败/空数据响应的兜底短缓存：故障期间仍给 CDN 一层保护，
+ * 避免每次请求都回源触发 Cloud Functions（配额消耗的最后一道闸）；
+ * 60s 上限保证上游恢复后最多 1 分钟自愈。手动强刷走 ?t= 新变体，不受此影响。
+ */
+const SHORT_CACHE_HEADERS = { 'Cache-Control': 'public, s-maxage=60' }
 
 /**
- * 失败响应：不缓存，时间戳实时（修复原常量 responseError 时间戳恒定的问题）
+ * 失败响应：60s 短缓存（原 no-store 会在上游故障期间让每次请求都零保护回源），时间戳实时
  */
 export function errorResponse(): NextResponse {
   const body: IResponse = {
@@ -22,7 +26,7 @@ export function errorResponse(): NextResponse {
     timestamp: Date.now(),
   }
 
-  return NextResponse.json(body, { headers: NO_STORE_HEADERS })
+  return NextResponse.json(body, { headers: SHORT_CACHE_HEADERS })
 }
 
 /**
@@ -57,8 +61,8 @@ function sanitizeHotList(list?: HotListItem[]): HotListItem[] {
 
 /**
  * 成功响应：统一封装 + 出口数据消毒 + CDN 缓存头
- * 空数据按不缓存处理：客户端把空列表视为失败会立即重试，
- * 若被 CDN 缓存会把这份空结果钉住整个缓存窗口，重试拿到的始终是同一份空数据
+ * 空数据按 60s 短缓存处理（原为不缓存）：客户端把空列表视为失败会立即重试，
+ * 长窗口缓存会把空结果钉住整个窗口；60s 在「省回源」与「上游恢复快速自愈」间取平衡
  */
 export function successResponse(list?: HotListItem[]): NextResponse {
   const data = sanitizeHotList(list)
@@ -69,5 +73,5 @@ export function successResponse(list?: HotListItem[]): NextResponse {
     timestamp: Date.now(),
   }
 
-  return NextResponse.json(body, { headers: data.length ? CACHE_HEADERS : NO_STORE_HEADERS })
+  return NextResponse.json(body, { headers: data.length ? CACHE_HEADERS : SHORT_CACHE_HEADERS })
 }
