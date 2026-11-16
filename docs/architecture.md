@@ -66,7 +66,7 @@ scripts/                    # Node 工具脚本（release-it 钩子、健康巡�
 - **新增一个榜单 = 两步**：① `src/config/hot-list.tsx` 的 `hotItemsConfig` 在对应分类的 `children` 里加一行；② 新建 `src/app/api/<value>/route.ts`。完整步骤与上游抓取规范见 [add-hotlist.md](./add-hotlist.md)。
 - **缓存分层**：服务端 fetch `revalidate` = CDN `s-maxage`，同取 `API_CACHE_SECONDS`（`src/config/response.ts`，代码默认 300 秒、仓库 `.env` 设 1800 秒，可用 `NEXT_PUBLIC_HOT_CACHE_SECONDS` 覆盖）；客户端刷新冷却另取 `CLIENT_COOLDOWN_SECONDS`（固定 300 秒），只管「多久能再手动强刷」，不参与服务端缓存。两者刻意解耦：放大服务端窗口只降上游请求与边缘函数调用量，不削弱手动强刷能力（强刷走 `?t=` 绕过全部缓存层，始终拿最新数据）；客户端冷却保持短窗口则保证用户随时能主动刷到实时数据。改服务端窗口时须同步评估客户端展示与搜索索引的过期口径（搜索索引跟随服务端窗口）。
 - **响应契约**：HTTP 层恒为 200，业务结果以 body 的 `code` 区分；`IResponse { code, msg, data?, timestamp }` 固定，成功 `code=200`（按服务端窗口缓存），失败 `code=500` 与空数据置 60s 短缓存（故障期保 CDN 命中、恢复后快速自愈）。前端依赖 `timestamp` 显示更新时间，勿改语义。
-- **CDN 缓存键规范化**（`edgeone.json`）：`/api/*` 响应的 `Vary` 收敛为仅 `Accept-Encoding`——Next 给路由 Handler 附加的 `rsc / next-router-*` Vary 会按请求头把同一 URL 拆成多个缓存对象（带 `RSC: 1` 的请求必 MISS），而 API 响应体与这些请求头无关，收敛不影响正确性。
+- **不要新建 `edgeone.json`**（2026-11-16 实测）：哪怕只配 `headers` 收敛 `Vary`，Makers 也会切换 `/api/*` 的缓存策略——普通 query 变体（`?foo=1`）与带 `RSC: 1` 的请求从「独立对象可缓存」变为完全不缓存，每次请求都穿透回源，配额消耗不降反升；且 `Vary` 覆写不影响边缘缓存键控，属表面收益。
 - **客户端状态**：`useAppStore`（zustand persist）。改持久化结构必须递增 `version` 并补 `migrate`；`now/tick` 心跳是派生基准，不持久化。相对时间与刷新冷却共用同一时钟保证自洽。
 - **动画约束**：首页卡片网格的 FLIP 重排动画由**子级** `motion.div` 的 `layout` 承担；父级 grid 容器只承载 variants，**不要开启 `layout`**——父级变换补偿会在网格重排时叠加错位（见 `page.tsx` 注释）。
 - **SEO**：`layout.tsx` metadata 的 keywords 由 `HOT_ITEMS` 派生；sitemap / robots / manifest / opengraph-image 均为 App Router 文件约定。
