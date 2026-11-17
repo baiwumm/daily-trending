@@ -145,24 +145,62 @@ function isManualRefresh(request) {
 const CACHE_NAMESPACE = 'hot-list-v1'
 
 /**
- * 函数内缓存层（Cache API，PoP 就近缓存，无需控制台审批；KV 审批通过后升级为跨节点一致）：
- * 以「时间戳 + 数据」整包存储，读取时按 TTL 自行判新鲜——不依赖平台对 Cache-Control
- * 过期语义的实现。回源失败时降级返回过期缓存（上游抖动不直接报错给用户）。
+ * isolate 内存缓存兜底：Cache API 不可用或操作失败时，同 isolate 的后续请求
+ * 仍能命中缓存（多 isolate 各自维护，效果按 PoP 打折，但回源量依旧大幅下降）。
+ */
+const memoryCache = new Map()
+
+/** Cache API 不可用时返回内存缓存适配器（同一 match/put 接口） */
+async function resolveCacheStore() {
+  try {
+    if (typeof caches !== 'undefined' && typeof caches.open === 'function') {
+      return await caches.open(CACHE_NAMESPACE)
+    }
+  } catch {
+    // Cache API 不可用，降级到内存缓存
+  }
+
+  return {
+    match: async (key) => {
+      const packed = memoryCache.get(key)
+
+      return packed === undefined ? undefined : new Response(packed)
+    },
+    put: async (key, response) => {
+      // 控制内存占用：超过 50 条按插入序淘汰
+      if (memoryCache.size >= 50) {
+        const firstKey = memoryCache.keys().next().value
+
+        memoryCache.delete(firstKey)
+      }
+
+      memoryCache.set(key, await response.clone().text())
+    },
+  }
+}
+
+/**
+ * 函数内缓存层：以「时间戳 + 数据」整包存储，读取时按 TTL 自行判新鲜——
+ * 不依赖平台对 Cache-Control 过期语义的实现。缓存键必须是合法 URL
+ * （Cache API 的 match/put 会校验）。缓存层任何失败都不影响请求本身：
+ * 读失败按未命中、写失败静默跳过、回源失败降级返回过期缓存（STALE）。
  * 空数据不写缓存：避免把上游偶发的空结果钉住整个窗口。
  */
 async function withCache(cacheKey, ttlMs, loader, forceRefresh = false) {
-  if (typeof caches === 'undefined') {
-    return { data: await loader(), cacheState: 'MISS' }
-  }
-
-  const cache = await caches.open(CACHE_NAMESPACE)
+  let store = null
   let stale = null
 
-  if (!forceRefresh) {
-    const hit = await cache.match(cacheKey)
+  try {
+    store = await resolveCacheStore()
+  } catch {
+    store = null
+  }
 
-    if (hit) {
-      try {
+  if (store && !forceRefresh) {
+    try {
+      const hit = await store.match(cacheKey)
+
+      if (hit) {
         const packed = await hit.json()
 
         if (Date.now() - packed.ts < ttlMs) {
@@ -170,17 +208,21 @@ async function withCache(cacheKey, ttlMs, loader, forceRefresh = false) {
         }
 
         stale = packed.data
-      } catch {
-        // 缓存体损坏按未命中处理
       }
+    } catch {
+      // 读缓存失败按未命中处理
     }
   }
 
   try {
     const data = await loader()
 
-    if (data?.length) {
-      await cache.put(cacheKey, new Response(JSON.stringify({ ts: Date.now(), data })))
+    if (store && data?.length) {
+      try {
+        await store.put(cacheKey, new Response(JSON.stringify({ ts: Date.now(), data })))
+      } catch {
+        // 写缓存失败不影响响应
+      }
     }
 
     return { data, cacheState: 'MISS' }
@@ -207,7 +249,7 @@ export async function onRequestGet(context) {
 
   try {
     const { data, cacheState } = await withCache(
-      'ithome:rankm',
+      'https://m.ithome.com/rankm',
       cacheSeconds * 1000,
       async () => {
         const response = await fetchUpstream('https://m.ithome.com/rankm')
