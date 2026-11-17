@@ -304,13 +304,73 @@ function sanitizeHotList(list) {
   })
 }
 
-function successResponse(data, cacheSeconds) {
-  return new Response(JSON.stringify({ msg: '请求成功', code: 200, data, timestamp: Date.now() }), {
-    headers: {
-      'Content-Type': 'application/json',
-      'Cache-Control': `public, s-maxage=${cacheSeconds}, stale-while-revalidate=60`,
-    },
-  })
+function successResponse(data, cacheSeconds, cacheState) {
+  const headers = {
+    'Content-Type': 'application/json',
+    'Cache-Control': `public, s-maxage=${data?.length ? cacheSeconds : SHORT_CACHE_SECONDS}, stale-while-revalidate=60`,
+  }
+
+  if (cacheState) {
+    headers['X-Cache'] = cacheState
+  }
+
+  return new Response(JSON.stringify({ msg: '请求成功', code: 200, data, timestamp: Date.now() }), { headers })
+}
+
+/** 手动刷新判断：客户端刷新按钮在 URL 上加 ?t=，同步绕过函数内缓存回源拿最新 */
+function isManualRefresh(request) {
+  return new URL(request.url).searchParams.has('t')
+}
+
+const CACHE_NAMESPACE = 'hot-list-v1'
+
+/**
+ * 函数内缓存层（Cache API，PoP 就近缓存，无需控制台审批；KV 审批通过后升级为跨节点一致）：
+ * 以「时间戳 + 数据」整包存储，读取时按 TTL 自行判新鲜——不依赖平台对 Cache-Control
+ * 过期语义的实现。回源失败时降级返回过期缓存（上游抖动不直接报错给用户）。
+ * 空数据不写缓存：避免把上游偶发的空结果钉住整个窗口。
+ */
+async function withCache(cacheKey, ttlMs, loader, forceRefresh = false) {
+  if (typeof caches === 'undefined') {
+    return { data: await loader(), cacheState: 'MISS' }
+  }
+
+  const cache = await caches.open(CACHE_NAMESPACE)
+  let stale = null
+
+  if (!forceRefresh) {
+    const hit = await cache.match(cacheKey)
+
+    if (hit) {
+      try {
+        const packed = await hit.json()
+
+        if (Date.now() - packed.ts < ttlMs) {
+          return { data: packed.data, cacheState: 'HIT' }
+        }
+
+        stale = packed.data
+      } catch {
+        // 缓存体损坏按未命中处理
+      }
+    }
+  }
+
+  try {
+    const data = await loader()
+
+    if (data?.length) {
+      await cache.put(cacheKey, new Response(JSON.stringify({ ts: Date.now(), data })))
+    }
+
+    return { data, cacheState: 'MISS' }
+  } catch (error) {
+    if (stale) {
+      return { data: stale, cacheState: 'STALE' }
+    }
+
+    throw error
+  }
 }
 
 function errorResponse() {
@@ -326,32 +386,41 @@ export async function onRequestGet(context) {
   const cacheSeconds = resolveCacheSeconds(context.env)
 
   try {
-    const response = await fetchUpstream('https://weread.qq.com/web/bookListInCategory/rising?rank=1')
+    const { data, cacheState } = await withCache(
+      'weread:rising',
+      cacheSeconds * 1000,
+      async () => {
+        const response = await fetchUpstream('https://weread.qq.com/web/bookListInCategory/rising?rank=1')
 
-    if (!response.ok) {
-      throw new Error(`上游请求失败：${response.status}`)
-    }
-
-    const responseBody = await response.json()
-
-    if (responseBody.books) {
-      const result = responseBody.books.map((v) => {
-        const info = v.bookInfo
-
-        return {
-          id: info.bookId,
-          title: info.title,
-          hot: v.readingCount,
-          pic: info.cover.replace('s_', 't9_'),
-          url: `https://weread.qq.com/web/bookDetail/${getWereadID(info.bookId)}`,
-          mobileUrl: `https://weread.qq.com/web/bookDetail/${getWereadID(info.bookId)}`,
+        if (!response.ok) {
+          throw new Error(`上游请求失败：${response.status}`)
         }
-      })
 
-      return successResponse(sanitizeHotList(result), cacheSeconds)
-    }
+        const responseBody = await response.json()
 
-    return successResponse([], SHORT_CACHE_SECONDS)
+        if (!responseBody.books) {
+          return []
+        }
+
+        return sanitizeHotList(
+          responseBody.books.map((v) => {
+            const info = v.bookInfo
+
+            return {
+              id: info.bookId,
+              title: info.title,
+              hot: v.readingCount,
+              pic: info.cover.replace('s_', 't9_'),
+              url: `https://weread.qq.com/web/bookDetail/${getWereadID(info.bookId)}`,
+              mobileUrl: `https://weread.qq.com/web/bookDetail/${getWereadID(info.bookId)}`,
+            }
+          }),
+        )
+      },
+      isManualRefresh(context.request),
+    )
+
+    return successResponse(data, cacheSeconds, cacheState)
   } catch (error) {
     console.error('上游请求失败：', error)
 
