@@ -304,7 +304,7 @@ function sanitizeHotList(list) {
   })
 }
 
-function successResponse(data, cacheSeconds, cacheState) {
+function successResponse(data, cacheSeconds, cacheState, timestamp = Date.now()) {
   const headers = {
     'Content-Type': 'application/json',
     'Cache-Control': `public, s-maxage=${data?.length ? cacheSeconds : SHORT_CACHE_SECONDS}, stale-while-revalidate=60`,
@@ -314,7 +314,7 @@ function successResponse(data, cacheSeconds, cacheState) {
     headers['X-Cache'] = cacheState
   }
 
-  return new Response(JSON.stringify({ msg: '请求成功', code: 200, data, timestamp: Date.now() }), { headers })
+  return new Response(JSON.stringify({ msg: '请求成功', code: 200, data, timestamp }), { headers })
 }
 
 /** 手动刷新判断：客户端刷新按钮在 URL 上加 ?t=，同步绕过函数内缓存回源拿最新 */
@@ -384,10 +384,10 @@ async function withCache(cacheKey, ttlMs, loader, forceRefresh = false) {
         const packed = await hit.json()
 
         if (Date.now() - packed.ts < ttlMs) {
-          return { data: packed.data, cacheState: 'HIT' }
+          return { data: packed.data, cacheState: 'HIT', ts: packed.ts }
         }
 
-        stale = packed.data
+        stale = packed
       }
     } catch {
       // 读缓存失败按未命中处理
@@ -396,19 +396,20 @@ async function withCache(cacheKey, ttlMs, loader, forceRefresh = false) {
 
   try {
     const data = await loader()
+    const ts = Date.now()
 
     if (store && data?.length) {
       try {
-        await store.put(cacheKey, new Response(JSON.stringify({ ts: Date.now(), data })))
+        await store.put(cacheKey, new Response(JSON.stringify({ ts, data })))
       } catch {
         // 写缓存失败不影响响应
       }
     }
 
-    return { data, cacheState: 'MISS' }
+    return { data, cacheState: 'MISS', ts }
   } catch (error) {
     if (stale) {
-      return { data: stale, cacheState: 'STALE' }
+      return { data: stale.data, cacheState: 'STALE', ts: stale.ts }
     }
 
     throw error
@@ -428,7 +429,7 @@ export async function onRequestGet(context) {
   const cacheSeconds = resolveCacheSeconds(context.env)
 
   try {
-    const { data, cacheState } = await withCache(
+    const { data, cacheState, ts } = await withCache(
       'https://weread.qq.com/web/bookListInCategory/rising?rank=1',
       cacheSeconds * 1000,
       async () => {
@@ -462,7 +463,7 @@ export async function onRequestGet(context) {
       isManualRefresh(context.request),
     )
 
-    return successResponse(data, cacheSeconds, cacheState)
+    return successResponse(data, cacheSeconds, cacheState, ts)
   } catch (error) {
     console.error('上游请求失败：', error)
 
