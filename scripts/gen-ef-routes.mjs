@@ -22,7 +22,8 @@ const HANDWRITTEN = ['weibo', 'ithome', 'weread']
  * 跳过原因：正则解析与 cheerio 的等价性需要真实页面反复对拍（smzdm/gp 上游已改版需重新设计），
  * 不带着疑问上线。
  */
-const DEFERRED = new Set(['douban-movie', 'github-trending', 'gp', 'jjwxc', 'smzdm', 'yjwujian'])
+// 第二批 HTML 路由曾暂缓对拍（2026-11-23 已完成 6/6，见 scripts/verify-html-parsers.mjs），现已转 parser 型正式生成
+const DEFERRED = new Set([])
 
 /** 每个路由的 EF 定义：cacheKey、抓取方式与映射逻辑（从 Next 版搬运） */
 const ROUTES = {
@@ -253,37 +254,11 @@ const ROUTES = {
         }))`,
   },
   'douban-movie': {
-    url: 'https://movie.douban.com/chart/',
-    text: true,
-    map: `// 每周榜单·电影：按 <tr class="item"> 行解析（cheerio 版为 .article tr.item）
-      const rows = html.split('<tr class="item"').slice(1)
-      const getNumbers = (text) => {
-        if (!text) return 10000000
-
-        const match = text.match(/\\d+/)
-
-        return match ? Number(match[0]) : 10000000
-      }
-
-      return rows.map((row) => {
-        const urlMatch = row.match(/<a href="([^"]+)"/)
-        const url = urlMatch ? decodeEntities(urlMatch[1]) : ''
-        const titleMatch = row.match(/<p class="pl2"><a[^>]*>([\\s\\S]*?)<\\/a>/)
-        const title = titleMatch ? stripTags(decodeEntities(titleMatch[1])).replace(/\\s+/g, ' ').trim() : ''
-        const descMatch = row.match(/<p class="pl">([\\s\\S]*?)<\\/p>/)
-        const hotMatch = row.match(/<span class="pl">([\\s\\S]*?)<\\/span>/)
-
-        return {
-          id: String(getNumbers(url)),
-          title,
-          desc: descMatch ? stripTags(decodeEntities(descMatch[1])).trim() : undefined,
-          hot: hotMatch ? getNumbers(stripTags(decodeEntities(hotMatch[1]))) : undefined,
-          url,
-          mobileUrl: \`https://m.douban.com/movie/subject/\${getNumbers(url)}/\`,
-        }
-      })`,
-    imports: ['decodeEntities', 'stripTags'],
-  },
+      // 每周榜单·电影：cheerio 版与正则解析器已对拍等价（10 条逐字节一致）
+      url: 'https://movie.douban.com/chart/',
+      parser: 'parseDoubanMovieChart',
+      parserFile: 'douban-movie',
+    },
   douyin: {
     url: 'https://aweme.snssdk.com/aweme/v1/hot/search/list/',
     map: `if (responseBody.status_code === 0) {
@@ -339,107 +314,24 @@ const ROUTES = {
       }))`,
   },
   jjwxc: {
-    url: 'https://www.jjwxc.net/topten.php?orderstr=7',
-    text: true,
-    encoding: 'gb18030',
-    map: `// 晋江文学城·TOP10：GB18030 页面，按 <a href*="onebook.php"> 抓取并按作品 ID 去重
-      const anchors = html.split(/<a\\s[^>]*href="[^"]*onebook\\.php[^"]*"[^>]*>/).slice(1)
-      const seen = new Set()
-      const result = []
-
-      for (let i = 0; i < anchors.length; i++) {
-        const chunk = anchors[i].split('</a>')[0]
-        const hrefMatch = chunk.match(/href="([^"]*onebook\\.php[^"]*)"/)
-        const href = hrefMatch ? hrefMatch[1] : ''
-        const novelid = href.match(/novelid=(\\d+)/)?.[1]
-        const title = stripTags(decodeEntities(chunk))
-          .replace(/\\s+/g, ' ')
-          .trim()
-
-        if (!novelid || !title || seen.has(novelid)) {
-          continue
-        }
-
-        seen.add(novelid)
-
-        result.push({
-          id: novelid,
-          title,
-          url: \`https://www.jjwxc.net/onebook.php?novelid=\${novelid}\`,
-          mobileUrl: \`https://www.jjwxc.net/onebook.php?novelid=\${novelid}\`,
-        })
-      }
-
-      return result`,
-    imports: ['decodeEntities', 'stripTags'],
-  },
+      // 晋江文学城 TOP10：GB18030 页面，对拍 200 条一致
+      url: 'https://www.jjwxc.net/topten.php?orderstr=7',
+      encoding: 'gb18030',
+      parser: 'parseJjwxcTopten',
+      parserFile: 'jjwxc',
+    },
   smzdm: {
-    url: 'https://www.smzdm.com/top/',
-    text: true,
-    map: `// 什么值得买·热榜：按 <a href*="smzdm.com/p/"> 抓取，标题在 .feed-hot-title 内，按 id 去重
-      const anchors = html.split(/<a\\s[^>]*href="[^"]*smzdm\\.com\\/p\\/[^"]*"[^>]*>/).slice(1)
-      const seen = new Set()
-      const result = []
-
-      for (let i = 0; i < anchors.length; i++) {
-        const chunk = anchors[i].split('</a>')[0]
-        const hrefMatch = chunk.match(/href="([^"]*smzdm\\.com\\/p\\/(\\d+)[^"]*)"/)
-        const id = hrefMatch ? hrefMatch[2] : ''
-        const titleMatch = chunk.match(/class="feed-hot-title">([\\s\\S]*?)<\\//)
-        const title = titleMatch ? stripTags(decodeEntities(titleMatch[1])).replace(/\\s+/g, ' ').trim() : ''
-
-        if (!id || !title || seen.has(id)) {
-          continue
-        }
-
-        seen.add(id)
-
-        result.push({
-          id,
-          title,
-          url: \`https://www.smzdm.com/p/\${id}/\`,
-          mobileUrl: \`https://www.smzdm.com/p/\${id}/\`,
-        })
-      }
-
-      return result`,
-    imports: ['decodeEntities', 'stripTags'],
-  },
+      // 什么值得买·热榜：上游 2026-11 改版后重新设计（.feed-deal-card__title-link），线上新选择器 20 条
+      url: 'https://www.smzdm.com/top/',
+      parser: 'parseSmzdmTop',
+      parserFile: 'smzdm',
+    },
   yjwujian: {
-    url: 'https://www.yjwujian.cn/news/',
-    text: true,
-    map: `// 一局游戏新闻列表：按 official/update/guide 三分类链接抓取，锚文本为「标题 [MM-DD]」格式
-      const anchors = html.split(/<a\\s[^>]*href="[^"]*\\/news\\/(?:official|update|guide)\\/[^"]*"[^>]*>/).slice(1)
-      const seen = new Set()
-      const result = []
-
-      for (let i = 0; i < anchors.length; i++) {
-        const chunk = anchors[i].split('</a>')[0]
-        const hrefMatch = chunk.match(/href="([^"]*)"/)
-        const href = hrefMatch ? hrefMatch[1] : ''
-        const text = stripTags(decodeEntities(chunk))
-          .replace(/\\s+/g, ' ')
-          .trim()
-        const match = text.match(/^(.+?)\\s\\[(\\d{2}-\\d{2})\\]$/)
-
-        if (!match || !href || seen.has(href)) {
-          continue
-        }
-
-        seen.add(href)
-
-        result.push({
-          id: href,
-          title: match[1].trim(),
-          tip: match[2],
-          url: href,
-          mobileUrl: href,
-        })
-      }
-
-      return result`,
-    imports: ['decodeEntities', 'stripTags'],
-  },
+      // 一局游戏新闻列表：标题 [MM-DD] 格式，对拍 12 条一致
+      url: 'https://www.yjwujian.cn/news/',
+      parser: 'parseYjwujianNews',
+      parserFile: 'yjwujian',
+    },
   eastmoney: {
     // req_trace 按缓存窗口取整，保证 Data Cache 的 URL 键稳定（EF 侧由 withCache 统一门控，
     // 取整只影响上游 URL 本身，保留该行为使缓存键语义与 Next 版一致）
@@ -463,82 +355,18 @@ const ROUTES = {
     map: `getMiyousheAnnouncements(2, 'ys')`,
   },
   'github-trending': {
-    url: 'https://github.com/trending',
-    text: true,
-    map: `// GitHub Trending：按 <article class="Box-row"> 解析，star 数紧凑格式化
-      const formatStars = (count) => {
-        if (count < 1000) return count.toString()
-
-        if (count < 1_000_000) {
-          return \`\${(count / 1000).toFixed(1).replace(/\\.0$/, '')}K\`
-        }
-
-        return \`\${(count / 1_000_000).toFixed(1).replace(/\\.0$/, '')}M\`
-      }
-
-      const articles = html.split('<article class="Box-row"').slice(1)
-
-      return articles.map((article, index) => {
-        const hrefMatch = article.match(/<h[23][^>]*>\\s*<a[^>]*href="([^"]+)"/)
-        const relativeUrl = hrefMatch ? hrefMatch[1] : ''
-        const descMatch = article.match(/<p class="my-1"[^>]*>([\\s\\S]*?)<\\/p>/)
-        const starMatch = article.match(/aria-label='star'[\\s\\S]*?<\\/svg>\\s*([\\d,]+)/)
-        const stars = starMatch ? Number.parseInt(starMatch[1].replace(/,/g, ''), 10) : 0
-
-        return {
-          id: relativeUrl || String(index),
-          title: (relativeUrl || '').replace(/^\\//, ''),
-          desc: descMatch ? stripTags(decodeEntities(descMatch[1])).trim() : '',
-          tip: formatStars(stars),
-          url: \`https://github.com\${relativeUrl}\`,
-          mobileUrl: \`https://github.com\${relativeUrl}\`,
-        }
-      })`,
-    imports: ['decodeEntities', 'stripTags'],
-  },
+      // GitHub Trending：star 数紧凑格式化，对拍 16 条一致
+      url: 'https://github.com/trending',
+      parser: 'parseGithubTrending',
+      parserFile: 'github-trending',
+    },
   gp: {
-    url: 'https://gp.qq.com/main.shtml',
-    text: true,
-    encoding: 'gbk',
-    map: `// 和平精英官网新闻区：GBK 页面，按 <a href*="/gicp/news/"> 抓取并按文章 ID 去重
-      const anchors = html.split(/<a\\s[^>]*href="[^"]*\\/gicp\\/news\\/[^"]*"[^>]*>/).slice(1)
-      const seen = new Set()
-      const result = []
-
-      for (let i = 0; i < anchors.length; i++) {
-        const chunk = anchors[i].split('</a>')[0]
-        const hrefMatch = chunk.match(/href="([^"]*\\/gicp\\/news\\/[^"]*)"/)
-        const href = hrefMatch ? hrefMatch[1] : ''
-        const id = href.match(/\\/(\\d+)\\.html/)?.[1]
-        const title = (
-          chunk.match(/class="sec2-sub-text">([\\s\\S]*?)<\\//)?.[1] ||
-          chunk.match(/class="sec2-info-body-text">([\\s\\S]*?)<\\//)?.[1] ||
-          chunk.match(/title="([^"]*)"/)?.[1] ||
-          ''
-        )
-          .replace(/\\s+/g, ' ')
-          .trim()
-
-        if (!id || !title || seen.has(id)) {
-          continue
-        }
-
-        seen.add(id)
-
-        const dateMatch = chunk.match(/class="sec2-info-time-text">([\\s\\S]*?)<\\//)
-        const articleUrl = new URL(href, 'https://gp.qq.com/').toString()
-
-        result.push({
-          id,
-          title,
-          tip: dateMatch ? dateMatch[1].trim() : undefined,
-          url: articleUrl,
-          mobileUrl: articleUrl,
-        })
-      }
-
-      return result`,
-  },
+      // 和平精英官网新闻区：GBK 页面，对拍 27 条一致
+      url: 'https://gp.qq.com/main.shtml',
+      encoding: 'gbk',
+      parser: 'parseGpNews',
+      parserFile: 'gp',
+    },
   'hello-github': {
     url: 'https://api.hellogithub.com/v1/?sort_by=featured&page=1&rank_by=newest&tid=all',
     map: `if (responseBody.success) {
@@ -984,7 +812,7 @@ const FILE_NAME = {}
 function renderImports(config) {
   const names = new Set(['fetchUpstreamJson', 'handleHotList', 'sanitizeHotList', 'resolveCacheSeconds'])
 
-  if (config.text) names.add('fetchUpstreamText')
+  if (config.text || config.parser) names.add('fetchUpstreamText')
   if (config.lib) names.add(config.lib)
   ;(config.imports ?? []).forEach((n) => names.add(n))
 
@@ -1001,6 +829,11 @@ function renderImports(config) {
     'getMiyousheAnnouncements',
     'getCsdnHotRank',
   ]
+
+  // parser 字段（edge-functions/parsers/<name>.js 的解析函数）也是 import 来源
+  if (config.parser) {
+    libExports.push(config.parser)
+  }
   const scanText = `${config.map ?? ''}\n${config.prelude ?? ''}\n${config.body ?? ''}\n${config.headers ?? ''}`
 
   for (const name of libExports) {
@@ -1009,12 +842,24 @@ function renderImports(config) {
     }
   }
 
-  return `import { ${[...names].sort().join(', ')} } from '../_lib.js'`
+  // parser 路由：解析函数从 ../parsers/<parserFile>.js 引入，其余共享能力从 _lib.js
+  const libNames = [...names].filter((n) => n !== config.parser)
+  const libImport = libNames.length ? `import { ${libNames.sort().join(', ')} } from '../_lib.js'` : ''
+  const parserImport = config.parser ? `import { ${config.parser} } from '../parsers/${config.parserFile}.js'` : ''
+
+  return [libImport, parserImport].filter(Boolean).join('\n')
 }
 
 function renderLoader(config) {
   if (config.lib) {
     return `async () => sanitizeHotList(await ${config.map})`
+  }
+
+  if (config.parser) {
+    return `async () => sanitizeHotList(await (async () => {
+      const html = await fetchUpstreamText(url, { ${config.encoding ? `encoding: '${config.encoding}'` : ''} })
+      return ${config.parser}(html)
+    })())`
   }
 
   if (config.parallel) {
