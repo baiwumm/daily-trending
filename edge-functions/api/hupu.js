@@ -15,9 +15,10 @@ export async function onRequestGet(context) {
     cacheKey: 'https://bbs.hupu.com/all-gambia',
     loader:
 async () => sanitizeHotList(await (async () => {
-          const html = await fetchUpstreamText(url, { headers: { 'User-Agent': '' } })
-    // 虎扑对桌面 UA 返回反爬页，共享库以 'User-Agent': '' 不发送该头。
-          // 页面数据在首个 <script> 的 window.$$data= 之后，取其后的 pageData.threads
+          const html = await fetchUpstreamText(url, {  })
+    // 页面数据在首个 <script> 的 window.$$data= 之后，取其后的 pageData.threads。
+          // 注意：虎扑 2026-11 起对无 UA 请求返回 405（Next 版历史注释「对桌面 UA 返回反爬页」
+          // 已过时），恢复默认 Chrome UA 即可正常取数
           const scriptMatch = html.match(/<script[^>]*>([\s\S]*?)<\/script>/)
     
           if (!scriptMatch || !scriptMatch[1].includes('window.$$data=')) {

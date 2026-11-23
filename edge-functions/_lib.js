@@ -304,9 +304,17 @@ export async function handleHotList(context, { cacheKey, loader }) {
 
     return successResponse(data, cacheSeconds, cacheState, ts)
   } catch (error) {
+    // 错误详情透出到 console 与响应头：EF 运行时的失败在线上只能看到 500，
+    // 没有原因就无法定位（如 V8 fetch 对 POST body 的处理差异）
+    const reason = error instanceof Error ? `${error.name}: ${error.message}` : String(error)
+
     console.error('上游请求失败：', error)
 
-    return errorResponse()
+    const response = errorResponse()
+
+    response.headers.set('X-Error-Reason', encodeURIComponent(reason).slice(0, 400))
+
+    return response
   }
 }
 
