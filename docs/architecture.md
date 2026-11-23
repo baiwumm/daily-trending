@@ -26,14 +26,16 @@
 src/
 ├── app/
 │   ├── layout.tsx          # 根布局：metadata / 主题 / 全局组件挂载
-│   ├── page.tsx            # 首页（唯一业务页面，'use client'）
+│   ├── page.tsx            # 首页（'use client'，按分类分节渲染全部榜单卡片）
 │   ├── globals.css         # Tailwind v4 入口 + HeroUI 主题变量
+│   ├── hot/[platform]/page.tsx  # 平台落地页：构建期全静态（generateStaticParams 枚举 HOT_ITEMS），零请求期数据
 │   ├── sitemap.ts / robots.ts / manifest.json / opengraph-image.tsx / not-found.tsx  # SEO/PWA/404
 │   └── api/<platform>/route.ts   # 尚未迁移 Edge Functions 的榜单 API（第二批 6 个 HTML 解析路由；数量以 hotItemsConfig 与 edge-functions/api 为准）
 ├── components/             # PascalCase 目录 + index.tsx；核心：HotCard（含 HotListVirtual）/ HotSettings / HotSearch / Sortable，其余为布局与功能组件
 ├── config/
 │   ├── hot-list.tsx        # HOT_ITEMS：全部榜单配置唯一数据源（分类/平台数量以此为准）
 │   └── response.ts         # 响应码 + 缓存窗口（API_CACHE_SECONDS 服务端 / CLIENT_COOLDOWN_SECONDS 客户端冷却）
+├── content/platforms.ts    # 落地页内容库（intro + FAQ）：Record<HotValue, ...> 编译期强制 47 平台全覆盖
 ├── hooks/                  # use-request.ts（自研 useRequest）、use-is-mobile 等
 ├── lib/
 │   ├── request.ts          # 上游请求公共层（Next 版路由用）：fetchJson / fetchText / fetchBuffer（统一 UA、15s 超时、revalidate）
@@ -68,13 +70,13 @@ docs/                       # 项目文档分册（本目录）
 
 ## 架构要点
 
-- **新增一个榜单 = 两步**：① `src/config/hot-list.tsx` 的 `hotItemsConfig` 在对应分类的 `children` 里加一行；② 新建 `src/app/api/<value>/route.ts`。完整步骤与上游抓取规范见 [add-hotlist.md](./add-hotlist.md)。
+- **新增一个榜单 = 三步**：① `src/config/hot-list.tsx` 的 `hotItemsConfig` 在对应分类的 `children` 里加一行；② 新建 `src/app/api/<value>/route.ts`（新榜单默认写 Edge Functions 路由，见下）；③ 在 `src/content/platforms.ts` 补该平台的落地页 intro + FAQ（`Record<HotValue, ...>` 编译期强制全覆盖，漏写直接构建失败）。落地页路由与 sitemap URL 均由 HOT_ITEMS 构建期派生，无需手工登记；`public/llms.txt` 为静态文件，新增平台时需同步补一条链接。完整步骤与上游抓取规范见 [add-hotlist.md](./add-hotlist.md)。
 - **缓存分层**：客户端门控（localStorage，`src/lib/client-cache.ts`，TTL = 服务端窗口）→ 函数内缓存（Edge Functions 的 `withCache`：KV → Cache API → isolate 内存）→ CDN `s-maxage`，窗口同取 `API_CACHE_SECONDS`（`src/config/response.ts`，代码默认 300 秒、仓库 `.env` 设 1800 秒，可用 `NEXT_PUBLIC_HOT_CACHE_SECONDS` 覆盖）；客户端刷新冷却另取 `CLIENT_COOLDOWN_SECONDS`（固定 300 秒），只管「多久能再手动强刷」。手动强刷走 `?t=` 绕过全部三层缓存，始终拿最新数据。
 - **运行时分布（2026-11-23 起）**：榜单 API 主力运行时是 **Edge Functions**（`edge-functions/api/*.js`，V8，按 CPU-ms 计费且 I/O 等待不计入）——41/47 已迁移；`src/app/api/*/route.ts` 只剩第二批 6 个 HTML 解析路由（douban-movie/gp/jjwxc/smzdm/yjwujian/github-trending，仍走 Cloud Functions）。迁移背景：Cloud Functions 按「内存 × 墙钟时长」计费（免费版 5 万 GB·s/月，2026-12-12 起按套餐严格执行），抓取等待全额计费；页面 SSR 同样跑在 CF 上但被 CDN 长期缓存，占比极小。**新增榜单默认写 Edge Functions 路由**（模板见 `scripts/gen-ef-routes.mjs` 与既有 `edge-functions/api/*.js`）。
 - **响应契约**：HTTP 层恒为 200，业务结果以 body 的 `code` 区分；`IResponse { code, msg, data?, timestamp }` 固定，成功 `code=200`（按服务端窗口缓存），失败 `code=500` 与空数据置 60s 短缓存（故障期保 CDN 命中、恢复后快速自愈）。前端依赖 `timestamp` 显示更新时间，勿改语义。Edge Functions 侧的同构实现在 `edge-functions/_lib.js`（`successResponse`/`errorResponse`/`sanitizeHotList`），缓存命中时 `timestamp` 回传数据真实抓取时间。
 - **不要新建 `edgeone.json`**（2026-11-16 实测）：哪怕只配 `headers` 收敛 `Vary`，Makers 也会切换 `/api/*` 的缓存策略——普通 query 变体（`?foo=1`）与带 `RSC: 1` 的请求从「独立对象可缓存」变为完全不缓存，每次请求都穿透回源，配额消耗不降反升；且 `Vary` 覆写不影响边缘缓存键控，属表面收益。
 - **客户端状态**：`useAppStore`（zustand persist）。改持久化结构必须递增 `version` 并补 `migrate`；`now/tick` 心跳是派生基准，不持久化。相对时间与刷新冷却共用同一时钟保证自洽。
 - **动画约束**：首页卡片网格的 FLIP 重排动画由**子级** `motion.div` 的 `layout` 承担；父级 grid 容器只承载 variants，**不要开启 `layout`**——父级变换补偿会在网格重排时叠加错位（见 `page.tsx` 注释）。
-- **SEO**：`layout.tsx` metadata 的 keywords 由 `HOT_ITEMS` 派生；sitemap / robots / manifest / opengraph-image 均为 App Router 文件约定。
+- **SEO**：`layout.tsx` metadata（title/description/keywords/canonical/openGraph）构建期内联，description 与 Header 副标题/og 图短口号（`NEXT_PUBLIC_APP_DESC`）解耦；结构化数据经 `src/components/JsonLd.tsx` 静态注入（`JSON.stringify` 序列化）——站点级 WebSite+Organization 在 layout、平台清单 ItemList 在首页、落地页为 WebPage+BreadcrumbList+ItemList+FAQPage 的 `@graph`；`/hot/[platform]` 47 个平台落地页构建期全静态（`force-static` + `dynamicParams=false`，内容来自 `src/content/platforms.ts`，零请求期数据，CTA 跳首页 `/#card-<value>` 锚点）；sitemap 含 48 条 URL、lastmod 取手工内容常量；robots allow-all；`public/llms.txt` 为 AI 可发现层。
 - **SSR hydration**：`src/app/page.tsx` 用 `mounted` 状态先渲染骨架再挂载内容，规避 SSR hydration 不匹配；客户端含随机性 / 读 localStorage 的 UI 需沿用此模式。
 - **图片**：`next.config.ts` 中 `images.unoptimized: true`（禁用 Next 图片优化），外链封面图直接原图输出。
