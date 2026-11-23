@@ -26,16 +26,37 @@
 
 > 注意：上表 `tip` / `label` 是**条目级**字段，与 `HotListConfig` 的同名配置字段（平台提示文案 / 平台显示名）同名不同义。
 
-特殊算法（签名、书籍 ID 换算等）放 `src/lib/` 独立模块，参考已有的 `weread.ts`、`miyoushe.ts`。
+特殊算法（签名、书籍 ID 换算等）：Next 版路由放 `src/lib/` 独立模块，参考已有的 `weread.ts`、`miyoushe.ts`；**Edge Functions 版没有模块系统，同类算法放 `edge-functions/_lib.js`**（已有纯 JS MD5、weread ID 换算、米游社抓取、CSDN WAF 退避重试）。
 
 ## 上游抓取规范
 
-- **上游请求一律走 `src/lib/request.ts`**：`fetchJson` / `fetchText` 统一注入 Chrome UA、15s 超时、`next.revalidate` 缓存策略。
-- **上游反爬应对**（`buildHeaders` 已支持）：
+- **新增榜单默认写 Edge Functions 路由**（主力运行时，CPU-ms 计费且 I/O 等待不计入）：
+  ① `src/config/hot-list.tsx` 的 `hotItemsConfig` 在对应分类的 `children` 里加一行；② 新建 `edge-functions/api/<value>.js`（模板参考同类型既有路由，公共能力从 `../_lib.js` 引入）。
+  典型形态：
+
+  ```javascript
+  import { fetchUpstreamJson, handleHotList, sanitizeHotList } from '../_lib.js'
+
+  export async function onRequestGet(context) {
+    return handleHotList(context, {
+      cacheKey: 'https://example.com/hot/list', // 上游真实 URL：同时作为 KV/Cache 缓存键
+      loader: async () => {
+        const responseBody = await fetchUpstreamJson('https://example.com/hot/list')
+
+        return sanitizeHotList(responseBody.data.list.map((v) => ({ id: v.id, title: v.title, url: v.url, mobileUrl: v.url })))
+      },
+    })
+  }
+  ```
+
+- **Edge Functions 运行时约束（V8）**：无 npm 包与 Node 内置模块（cheerio / node:crypto 不可用）——HTML 解析用正则（参考 `ithome.js`，注意数字/十六进制实体解码）、MD5 用 `_lib.js` 的 `md5Hex`、SHA-1 用 `sha1Hex`（Web Crypto，异步）；GBK/GB18030 页面用 `fetchUpstreamText(url, { encoding: 'gbk' })`；包体上限 5MB、CPU 200ms/次。
+- **上游请求一律走请求封装**：Next 版走 `src/lib/request.ts` 的 `fetchJson` / `fetchText`；Edge Functions 版走 `edge-functions/_lib.js` 的 `fetchUpstreamJson` / `fetchUpstreamText`（统一 Chrome UA、15s 超时；显式传 `'User-Agent': ''` 可移除 UA 应对反爬）。
+- **上游反爬应对**：
   - 微博等需额外 `Referer`；
-  - 个别站点对桌面 UA 返回反爬页，传 `'User-Agent': ''` 显式移除 UA。
-- **页面编码**：`fetchText` 默认按 UTF-8 解码；GBK / GB18030 等非 UTF-8 页面显式传 `encoding`（参考 `gp`、`jjwxc` 路由），否则中文乱码。
-- **上游挂掉属常态**：走 `errorResponse()` 返回，前端已处理空数据与错误态；失败/空数据响应置 60s 短缓存（`s-maxage=60`）——故障期间仍有 CDN 保护、上游恢复后最多 1 分钟自愈，保持该语义。
+  - 个别站点对桌面 UA 返回反爬页，传 `'User-Agent': ''` 显式移除 UA（虎扑）；
+  - CSDN 的 WAF 挑战（521）退避重试已在 `_lib.js` 的 `getCsdnHotRank` 内实现，直接调用。
+- **页面编码**：默认按 UTF-8 解码；GBK / GB18030 等非 UTF-8 页面显式传 `encoding`（参考 `gp`、`jjwxc` 的 Next 版实现），否则中文乱码。
+- **上游挂掉属常态**：`handleHotList` 统一兜底，前端已处理空数据与错误态；失败/空数据响应置 60s 短缓存（`s-maxage=60`）——故障期间仍有 CDN 保护、上游恢复后最多 1 分钟自愈，保持该语义。
 - 改缓存窗口须评估服务端窗口（`API_CACHE_SECONDS`）与客户端冷却（`CLIENT_COOLDOWN_SECONDS`）的分层影响（定义见 [architecture.md](./architecture.md) 架构要点）。
 
 ## 上游健康巡检
