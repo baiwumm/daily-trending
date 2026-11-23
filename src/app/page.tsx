@@ -14,6 +14,7 @@ import { useEffect, useMemo, useState } from 'react'
 import BlurFade from '@/components/BlurFade'
 import CategoryIndicator from '@/components/CategoryIndicator'
 import HotCard from '@/components/HotCard'
+import JsonLd from '@/components/JsonLd'
 import SkeletonCard from '@/components/SkeletonCard'
 import {
   getCategoryValues,
@@ -24,6 +25,26 @@ import {
 } from '@/config/hot-list'
 import { useAppStore } from '@/store/useAppStore'
 
+const APP_URL = process.env.NEXT_PUBLIC_APP_URL || 'https://hot.baiwumm.com'
+
+// 首页结构化数据：全平台清单，构建期从 HOT_ITEMS 唯一数据源派生（url 指向对应平台落地页），零请求期成本
+const HOT_LIST_JSON_LD = {
+  '@context': 'https://schema.org',
+  '@graph': [
+    {
+      '@type': 'ItemList',
+      name: '热榜平台列表',
+      numberOfItems: HOT_ITEMS.values.length,
+      itemListElement: HOT_ITEMS.items.map(({ value, label, tip }, index) => ({
+        '@type': 'ListItem',
+        position: index + 1,
+        name: `${label}${tip}`,
+        url: `${APP_URL}/hot/${value}`,
+      })),
+    },
+  ],
+}
+
 const gridClassName = 'grid gap-4 grid-cols-[repeat(auto-fill,minmax(20rem,1fr))]'
 
 // 挂载前的整页骨架：按配置分类分节、每节渲染实际卡片数，与真实布局同构，挂载切换时不跳动。
@@ -32,11 +53,12 @@ function SkeletonSections() {
   return (
     <div className="space-y-10">
       {CATEGORY_GROUPS.map(({ category, values }) => (
-        <div key={category} className="flex flex-col gap-3">
+        // id/scroll-mt 与真实分节保持一致：落地页面包屑的 /#cat-<分类> 深链在骨架态即可被原生命中
+        <div key={category} className="flex flex-col gap-3 scroll-mt-24" id={`cat-${category}`}>
           <Skeleton className="h-5 w-24 rounded-md" />
           <div className={gridClassName}>
             {values.map((value) => (
-              <SkeletonHotCard key={value} />
+              <SkeletonHotCard key={value} id={`card-${value}`} />
             ))}
           </div>
         </div>
@@ -45,9 +67,11 @@ function SkeletonSections() {
   )
 }
 
-function SkeletonHotCard() {
+// id/scroll-mt 与真实 HotCard 一致：落地页 CTA 的 /#card-<value> 深链在骨架态即可被原生命中，
+// 挂载后同位置替换为真实卡片（骨架与真实布局同构），避免「锚点不存在 → 不滚动」
+function SkeletonHotCard({ id }: { id: string }) {
   return (
-    <Card className="p-0 gap-0">
+    <Card className="p-0 gap-0 scroll-mt-24" id={id}>
       <Card.Header className="flex justify-between items-center flex-row p-3">
         <div className="flex items-center gap-2">
           <Skeleton className="size-6 rounded-md" />
@@ -100,11 +124,17 @@ export default function Home() {
 
   // 挂载前渲染与真实布局同构的骨架，避免 SSR 空白 + 全屏 loading 的闪烁
   if (!mounted) {
-    return <SkeletonSections />
+    return (
+      <>
+        <JsonLd data={HOT_LIST_JSON_LD} />
+        <SkeletonSections />
+      </>
+    )
   }
 
   return (
     <>
+      <JsonLd data={HOT_LIST_JSON_LD} />
       <div className="space-y-10">
         {sections.map(({ category, values }) => (
           // layout：设置里 ↑/↓ 调整分类顺序时，分节交换带 FLIP 平滑动画（与设置弹窗一致）

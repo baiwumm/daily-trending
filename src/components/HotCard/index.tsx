@@ -180,7 +180,8 @@ function HotCard({ value, label, tip, prefix, suffix }: HotListConfig) {
   }
 
   return (
-    <Card ref={ref} className="p-0 gap-0">
+    // id 供落地页 CTA 与外部深链锚定到具体卡片；scroll-mt 给 sticky Header 让位
+    <Card ref={ref} className="p-0 gap-0 scroll-mt-24" id={`card-${value}`}>
       <Card.Header className="flex justify-between items-center flex-row p-3">
         <div className="flex items-center gap-2">
           <img
