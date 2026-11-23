@@ -1,0 +1,58 @@
+# 今日热榜
+
+> 全网热榜聚合平台：聚合微博、知乎、B 站、抖音、GitHub 等 47 个热门平台实时热榜，按分类浏览，支持全局搜索与排名趋势。数据约每 30 分钟自动更新，支持手动刷新。
+
+- 站点: https://hot.baiwumm.com
+- 源码: https://github.com/baiwumm/daily-trending
+- 语言: 简体中文
+
+## 页面
+
+- [首页·全部热榜](https://hot.baiwumm.com/)
+- [微博热搜榜](https://hot.baiwumm.com/hot/weibo)
+- [今日头条热榜](https://hot.baiwumm.com/hot/toutiao)
+- [百度热搜榜](https://hot.baiwumm.com/hot/baidu)
+- [腾讯新闻热点榜](https://hot.baiwumm.com/hot/qq)
+- [网易新闻热榜](https://hot.baiwumm.com/hot/netease)
+- [夸克今日热点](https://hot.baiwumm.com/hot/quark)
+- [澎湃新闻热榜](https://hot.baiwumm.com/hot/thepaper)
+- [知乎日报推荐榜](https://hot.baiwumm.com/hot/zhihu-daily)
+- [新浪新闻热点榜](https://hot.baiwumm.com/hot/sina-news)
+- [知乎热榜](https://hot.baiwumm.com/hot/zhihu)
+- [百度贴吧热议榜](https://hot.baiwumm.com/hot/baidutieba)
+- [虎扑步行街热帖](https://hot.baiwumm.com/hot/hupu)
+- [人人都是产品经理热榜](https://hot.baiwumm.com/hot/woshipm)
+- [什么值得买热榜](https://hot.baiwumm.com/hot/smzdm)
+- [同花顺热榜](https://hot.baiwumm.com/hot/10jqka)
+- [东方财富快讯](https://hot.baiwumm.com/hot/eastmoney)
+- [财联社热榜](https://hot.baiwumm.com/hot/cls)
+- [华尔街见闻热文榜](https://hot.baiwumm.com/hot/wallstcn)
+- [金十数据快讯](https://hot.baiwumm.com/hot/jin10)
+- [Github热门仓库](https://hot.baiwumm.com/hot/github-trending)
+- [稀土掘金热榜](https://hot.baiwumm.com/hot/juejin)
+- [HelloGithub精选](https://hot.baiwumm.com/hot/hello-github)
+- [CSDN热榜](https://hot.baiwumm.com/hot/csdn)
+- [36氪24小时热榜](https://hot.baiwumm.com/hot/36kr)
+- [虎嗅最新资讯](https://hot.baiwumm.com/hot/huxiu)
+- [爱范儿快讯](https://hot.baiwumm.com/hot/ifanr)
+- [少数派热门文章](https://hot.baiwumm.com/hot/sspai)
+- [IT之家热榜](https://hot.baiwumm.com/hot/ithome)
+- [懂车帝今日要闻](https://hot.baiwumm.com/hot/dongchedi)
+- [哔哩哔哩热门榜](https://hot.baiwumm.com/hot/bilibili)
+- [抖音热点榜](https://hot.baiwumm.com/hot/douyin)
+- [快手热榜](https://hot.baiwumm.com/hot/kuaishou)
+- [AcFun热榜](https://hot.baiwumm.com/hot/acfun)
+- [豆瓣电影新片榜](https://hot.baiwumm.com/hot/douban-movie)
+- [网易云音乐热歌榜](https://hot.baiwumm.com/hot/netease-music)
+- [QQ 音乐热歌榜](https://hot.baiwumm.com/hot/qq-music)
+- [微信读书飙升榜](https://hot.baiwumm.com/hot/weread)
+- [百度百科历史上的今天](https://hot.baiwumm.com/hot/history-today)
+- [豆瓣读书热门图书](https://hot.baiwumm.com/hot/douban-book)
+- [晋江文学城总分榜](https://hot.baiwumm.com/hot/jjwxc)
+- [Steam热销榜](https://hot.baiwumm.com/hot/steam)
+- [英雄联盟更新公告](https://hot.baiwumm.com/hot/lol)
+- [和平精英官方资讯](https://hot.baiwumm.com/hot/gp)
+- [永劫无间官方资讯](https://hot.baiwumm.com/hot/yjwujian)
+- [原神官方公告](https://hot.baiwumm.com/hot/genshin)
+- [绝区零官方公告](https://hot.baiwumm.com/hot/zzz)
+- [明日方舟官方公告](https://hot.baiwumm.com/hot/arknights)
