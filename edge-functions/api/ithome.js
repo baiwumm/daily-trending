@@ -31,9 +31,14 @@ function replaceLink(url) {
   return url
 }
 
-/** 常见 HTML 实体解码（&amp; 最后替换避免二次解码），对齐 cheerio .text() 的实体还原行为 */
+/**
+ * HTML 实体解码，对齐 cheerio .text() 的实体还原行为：
+ * 覆盖命名实体与数字/十六进制字符引用（&#183; / &#xB7;），&amp; 最后替换避免二次解码。
+ */
 function decodeEntities(text) {
   return text
+    .replace(/&#(\d+);/g, (_, code) => String.fromCharCode(Number(code)))
+    .replace(/&#x([0-9a-f]+);/gi, (_, code) => String.fromCharCode(Number.parseInt(code, 16)))
     .replace(/&lt;/g, '<')
     .replace(/&gt;/g, '>')
     .replace(/&quot;/g, '"')
@@ -150,8 +155,29 @@ const CACHE_NAMESPACE = 'hot-list-v1'
  */
 const memoryCache = new Map()
 
-/** Cache API 不可用时返回内存缓存适配器（同一 match/put 接口） */
+/**
+ * 缓存存储仲裁：KV（跨节点一致，命名空间绑定的全局变量 hot_kv）→ Cache API → isolate 内存。
+ * 任一层获取失败自动降级下一层；缓存键为上游真实 URL（同时满足 Cache API 的合法键校验）。
+ */
 async function resolveCacheStore() {
+  // KV 优先：命名空间绑定的全局变量（未绑定时 typeof 判定安全跳过，不影响部署）
+  try {
+    if (typeof hot_kv !== 'undefined' && hot_kv) {
+      return {
+        match: async (key) => {
+          const packed = await hot_kv.get(key)
+
+          return packed === null || packed === undefined ? undefined : new Response(packed)
+        },
+        put: async (key, response) => {
+          await hot_kv.put(key, await response.text())
+        },
+      }
+    }
+  } catch {
+    // KV 访问异常，降级到 Cache API
+  }
+
   try {
     if (typeof caches !== 'undefined' && typeof caches.open === 'function') {
       return await caches.open(CACHE_NAMESPACE)

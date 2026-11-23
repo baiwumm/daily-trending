@@ -99,8 +99,29 @@ const CACHE_NAMESPACE = 'hot-list-v1'
  */
 const memoryCache = new Map()
 
-/** Cache API 不可用时返回内存缓存适配器（同一 match/put 接口） */
+/**
+ * 缓存存储仲裁：KV（跨节点一致，命名空间绑定的全局变量 hot_kv）→ Cache API → isolate 内存。
+ * 任一层获取失败自动降级下一层；缓存键为上游真实 URL（同时满足 Cache API 的合法键校验）。
+ */
 async function resolveCacheStore() {
+  // KV 优先：命名空间绑定的全局变量（未绑定时 typeof 判定安全跳过，不影响部署）
+  try {
+    if (typeof hot_kv !== 'undefined' && hot_kv) {
+      return {
+        match: async (key) => {
+          const packed = await hot_kv.get(key)
+
+          return packed === null || packed === undefined ? undefined : new Response(packed)
+        },
+        put: async (key, response) => {
+          await hot_kv.put(key, await response.text())
+        },
+      }
+    }
+  } catch {
+    // KV 访问异常，降级到 Cache API
+  }
+
   try {
     if (typeof caches !== 'undefined' && typeof caches.open === 'function') {
       return await caches.open(CACHE_NAMESPACE)
