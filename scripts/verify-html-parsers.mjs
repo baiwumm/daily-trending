@@ -288,5 +288,52 @@ function loadSampleEncoded(name, encoding) {
   }
 }
 
+
+/* ================= hupu（步行街热帖；页面改版后无 cheerio 基线，用人工核对值回归） ================= */
+{
+  const html = loadSample('hupu-gambia.html')
+
+  const { parseHupuGambia } = await import('../edge-functions/parsers/hupu.js')
+  const items = parseHupuGambia(html)
+
+  // 人工核对基线（2026-11-23 从真实页面提取）：条数 + 前 3 条关键字段
+  // 页面 2026-11 改版（window.$$data → 服务端渲染 list-item），旧 cheerio 选择器已不可用，
+  // 故改用人工核对值做回归断言；URL 仍是 /all-gambia，标题「步行街热帖」语义不变
+  const expectedTop = [
+    { id: '644149363', title: '一位日本人来中国后的一些感受，目前已有超百万的浏览量', tip: 50, desc: '863回复' },
+    { id: '644149022', title: '新中国开国大典《签到表》，书法百花齐放，一个个如天将下凡！', tip: 50, desc: '284回复' },
+    { id: '644148078', title: '说唱歌手凭啥这么有钱', tip: 50, desc: '396回复' },
+  ]
+
+  const topOk =
+    items.length >= 60 &&
+    expectedTop.every(
+      (exp, i) =>
+        items[i] &&
+        items[i].id === exp.id &&
+        items[i].title === exp.title &&
+        items[i].tip === exp.tip &&
+        items[i].desc === exp.desc &&
+        items[i].url === `https://bbs.hupu.com/${exp.id}.html`,
+    )
+  // 全量 id 唯一性（虚拟列表 key）
+  const idsUnique = new Set(items.map((i) => i.id)).size === items.length
+
+  if (topOk && idsUnique) {
+    console.log(`PASS | hupu | ${items.length} 条，前 3 条与人工核对基线一致，id 唯一`)
+    pass++
+  } else {
+    console.log(`FAIL | hupu | ${items.length} 条`)
+    for (let i = 0; i < expectedTop.length; i++) {
+      if (JSON.stringify(items[i]) !== JSON.stringify({ ...expectedTop[i], url: `https://bbs.hupu.com/${expectedTop[i].id}.html`, mobileUrl: `https://bbs.hupu.com/${expectedTop[i].id}.html` })) {
+        console.log(`  差异 @${i}: 实际 ${JSON.stringify(items[i])}`)
+        console.log(`           期望 ${JSON.stringify({ ...expectedTop[i], url: `https://bbs.hupu.com/${expectedTop[i].id}.html`, mobileUrl: `https://bbs.hupu.com/${expectedTop[i].id}.html` })}`)
+        break
+      }
+    }
+    fail++
+  }
+}
+
 console.log(`\n汇总：${pass} 通过 / ${fail} 失败`)
 process.exit(fail ? 1 : 0)

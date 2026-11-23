@@ -269,6 +269,13 @@ export async function withCache(cacheKey, ttlMs, loader, forceRefresh = false) {
     const data = await loader()
     const ts = Date.now()
 
+    // 空数据视为抓取失败（与客户端「空数据视为失败」同语义）：
+    // 不写缓存，有陈旧缓存则降级返回（STALE）——防止上游偶发空结果
+    // （反爬页、接口抖动）把缓存打空后用户看到空白
+    if (!data?.length && stale) {
+      return { data: stale.data, cacheState: 'STALE', ts: stale.ts }
+    }
+
     if (store && data?.length) {
       try {
         await store.put(cacheKey, new Response(JSON.stringify({ ts, data })))

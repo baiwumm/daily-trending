@@ -290,28 +290,13 @@ const ROUTES = {
       return []`,
   },
   hupu: {
+    // 虎扑步行街热帖：保持旧链接 /all-gambia（标题「步行街热帖」语义不变）。
+    // 2026-11 上游两处变化：① window.$$data 内嵌 JSON 改为服务端渲染 list-item 结构
+    // （解析器同步适配）；② 无 UA 请求会被拒（405）——_lib 默认注入 Chrome UA 即可，
+    // 阿里云 WAF 为频率风控，缓存层 30 分钟一次回源的频率不会触发
     url: 'https://bbs.hupu.com/all-gambia',
-    text: true,
-    map: `// 页面数据在首个 <script> 的 window.$$data= 之后，取其后的 pageData.threads。
-      // 注意：虎扑 2026-11 起对无 UA 请求返回 405（Next 版历史注释「对桌面 UA 返回反爬页」
-      // 已过时），恢复默认 Chrome UA 即可正常取数
-      const scriptMatch = html.match(/<script[^>]*>([\\s\\S]*?)<\\/script>/)
-
-      if (!scriptMatch || !scriptMatch[1].includes('window.$$data=')) {
-        return []
-      }
-
-      const data = JSON.parse(scriptMatch[1].split('window.$$data=')[1])
-
-      return data.pageData.threads.map((v) => ({
-        id: v.tid,
-        title: v.title,
-        desc: v.desc,
-        pic: v.cover,
-        tip: v.lights,
-        url: \`https://bbs.hupu.com\${v.url}\`,
-        mobileUrl: \`https://bbs.hupu.com\${v.url}\`,
-      }))`,
+    parser: 'parseHupuGambia',
+    parserFile: 'hupu',
   },
   jjwxc: {
       // 晋江文学城 TOP10：GB18030 页面，对拍 200 条一致
