@@ -12,7 +12,7 @@ import { Fragment, useEffect, useMemo, useRef, useState } from 'react'
 
 import { HOT_ITEMS } from '@/config/hot-list'
 import { API_CACHE_SECONDS } from '@/config/response'
-import { readClientCache, writeClientCache } from '@/lib/client-cache'
+import { getAggregate, mergeAggregateSource } from '@/lib/aggregate'
 import { formatNumber } from '@/lib/utils'
 import { useAppStore } from '@/store/useAppStore'
 
@@ -188,13 +188,15 @@ function HotSearch() {
 
     const fetchList = async (value: HotValue) => {
       try {
-        // 客户端门控命中：直接用本地缓存建索引，不发请求——
-        // 搜索首开不再产生 47 个请求的突发，且跨会话生效（localStorage 比 sessionStorage 更持久）
-        const cached = readClientCache(value)
+        // 聚合命中：零请求建索引（localStorage 跨会话生效，首开不再产生 47 个请求的突发）
+        const aggregate = await getAggregate()
+        const entry = aggregate?.[value]
 
-        if (cached) {
+        if (controller.signal.aborted) return
+
+        if (entry?.data?.length) {
           fetchedRef.current.add(value)
-          const items: SearchIndexItem[] = cached.list.map(({ title, hot }) => ({ title, hot }))
+          const items: SearchIndexItem[] = entry.data.map(({ title, hot }) => ({ title, hot }))
 
           setIndex((prev) => ({ ...prev, [value]: items }))
           writeIndexCache(value, items)
@@ -216,8 +218,8 @@ function HotSearch() {
 
         setIndex((prev) => ({ ...prev, [value]: items }))
         writeIndexCache(value, items)
-        // 顺手写入门控缓存：搜索拉取的数据同样供卡片免请求命中（timestamp 为数据真实生成时间）
-        writeClientCache(value, result.timestamp, result.data)
+        // 回填聚合缓存：搜索拉取的数据同样供卡片免请求命中（timestamp 为数据真实生成时间）
+        mergeAggregateSource(value, result.timestamp, result.data)
       } catch {
         // 中断或网络失败：留待下次打开重试
       } finally {

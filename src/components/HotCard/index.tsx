@@ -19,7 +19,7 @@ import BlurFade from '@/components/BlurFade'
 import SkeletonCard from '@/components/SkeletonCard'
 import { CLIENT_COOLDOWN_SECONDS, RESPONSE } from '@/config/response'
 import { FatalRequestError, useRequest } from '@/hooks/use-request'
-import { readClientCache, writeClientCache } from '@/lib/client-cache'
+import { getAggregate, mergeAggregateSource } from '@/lib/aggregate'
 import { smoothScrollTo } from '@/lib/utils'
 import { useAppStore } from '@/store/useAppStore'
 
@@ -56,17 +56,16 @@ function HotCard({ value, label, tip, prefix, suffix }: HotListConfig) {
       // 一次性消费标记
       bypassCacheRef.current = false
 
-      // 客户端门控：本地缓存未过期直接命中，不发请求（?t= 手动刷新绕过）。
-      // CDN 不缓存边缘函数响应，每次请求都执行函数并回源上游——
-      // 用户侧先把重复访问挡在本地，是最便宜的减量层。
-      // updateTime 取数据真实抓取时间：跨过冷却窗口则立即允许手动刷新
+      // 聚合命中：/api/all 一次拉全部源，命中则本卡零请求且其余卡片也免请求
+      // （?t= 手动刷新绕过）。updateTime 取数据真实抓取时间：跨过冷却窗口则立即允许手动刷新
       if (!bypass) {
-        const cached = readClientCache(value)
+        const aggregate = await getAggregate()
+        const entry = aggregate?.[value]
 
-        if (cached) {
-          setUpdateTime({ [value]: cached.ts })
+        if (entry?.data?.length) {
+          setUpdateTime({ [value]: entry.ts })
 
-          return cached.list
+          return entry.data
         }
       }
 
@@ -96,7 +95,8 @@ function HotCard({ value, label, tip, prefix, suffix }: HotListConfig) {
       // 仅在请求成功且有数据时记录更新时间，失败/空数据时保留旧值
       setUpdateTime({ [value]: Date.now() })
       // 写入门控缓存：服务端窗口内再次访问直接本地命中
-      writeClientCache(value, Date.now(), list)
+      // 回填聚合缓存：手动刷新的新数据也供聚合层后续命中
+      mergeAggregateSource(value, Date.now(), list)
 
       return list
     },

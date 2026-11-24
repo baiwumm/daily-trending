@@ -16,6 +16,9 @@ const EF_DIR = join(ROOT, 'edge-functions/api')
 /** 已知会间歇失败/需要人工判断的路由（Fail-Open：只警告不判失败） */
 const FLAKY = new Set(['steam'])
 
+/** 非标准榜单路由（专用验证，不适用通用断言）：all = 聚合端点（data 为对象非数组） */
+const SKIP_GENERIC = new Set(['all'])
+
 const routeFiles = readdirSync(EF_DIR).filter((f) => f.endsWith('.js'))
 let pass = 0
 let warn = 0
@@ -24,6 +27,12 @@ const failures = []
 
 for (const file of routeFiles) {
   const route = file.replace(/\.js$/, '')
+
+  if (SKIP_GENERIC.has(route)) {
+    console.log(`SKIP | ${route} | 聚合端点（/api/all 聚合语义不适用通用断言，已由专门用例覆盖）`)
+    continue
+  }
+
   const mod = await import(pathToFileURL(join(EF_DIR, file)).href)
 
   if (typeof mod.onRequestGet !== 'function') {
