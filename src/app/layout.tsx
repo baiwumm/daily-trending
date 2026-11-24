@@ -69,11 +69,13 @@ export const metadata: Metadata = {
     },
   ],
   verification: {
+    google: '4YBtBTmg5H9MGoyvCmvEeJx8viyBPjLnK4INCHT9SQs',
     other: {
+      'msvalidate.01': '6DEA985B20CA4A215DAC4EA659011A8A',
       'baidu-site-verification': 'codeva-kYzuuOyYCZ',
       'bytedance-verification-code': 'oPgCIrgBz/3Lhr9BoNE2',
     },
-  }, // 网站验证
+  }, // 网站验证：百度 / 字节（头条）/ Google Search Console / Bing Webmaster
   // 收敛到核心词：原实现拼接全部 47 个平台名（约 500 字符）属堆砌，且 title 已覆盖平台词
   keywords: ['今日热榜', '全网热榜', '微博热榜', '知乎热榜', 'B站热榜', '抖音热榜', '热榜聚合'], // 网站关键词
   openGraph: {
