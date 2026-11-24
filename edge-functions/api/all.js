@@ -28,6 +28,7 @@ const CACHE_KEYS = {
   'douban-movie': 'https://movie.douban.com/chart/',
   dongchedi: 'https://www.dongchedi.com/',
   douyin: 'https://aweme.snssdk.com/aweme/v1/hot/search/list/',
+  genshin: 'https://bbs-api-static.miyoushe.com/painter/wapi/getNewsList?gids=2',
   'github-trending': 'https://github.com/trending',
   gp: 'https://gp.qq.com/main.shtml',
   'hello-github': 'https://api.hellogithub.com/v1/?sort_by=featured&page=1&rank_by=newest&tid=all',
@@ -60,6 +61,10 @@ const CACHE_KEYS = {
   zhihu: 'https://api.zhihu.com/topstory/hot-list',
   'zhihu-daily': 'https://daily.zhihu.com/api/4/news/latest',
   zzz: 'https://bbs-api-static.miyoushe.com/painter/wapi/getNewsList?gids=8',
+  // eastmoney / history-today 的键含动态段（req_trace / 当月月份），此处为哨兵条目——
+  // dynamicCacheKey() 对这两个 value 返回按公式现算的完整键；静态表只提供遍历清单
+  eastmoney: 'https://np-listapi.eastmoney.com/comm/web/getFastNewsList',
+  'history-today': 'https://baike.baidu.com/cms/home/eventsOnHistory',
 }
 
 /** 动态缓存键：与对应 loader 的 URL 公式保持一致 */
