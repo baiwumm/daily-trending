@@ -117,6 +117,33 @@ export function isManualRefresh(request) {
   return new URL(request.url).searchParams.has('t')
 }
 
+/* ================= 爬虫早退（EF CPU 紧急止血） ================= */
+
+/**
+ * 已知爬虫/采集器 UA 特征（子串匹配，不区分大小写）。
+ * 背景（2026-11-26）：EF 执行次数 = 全部 API 请求数（CDN 不缓存边缘函数响应），
+ * 流量以爬虫为主且持续上涨，执行一次 ~10ms CPU 已致配额 80.7%、按速率次日耗尽。
+ * 已知爬虫 UA 在函数入口早退（~0.1ms），成本降约 100 倍；
+ * robots.txt（Disallow /api/）管得住守规矩的爬虫，此处兜住不守规矩的。
+ */
+const BOT_UA_RE =
+  /(?:bot|spider|crawl|slurp|bytespider|petalbot|yisou|datespider|okhttp|python-requests|python-urllib|aiohttp|httpx|go-http-client|java\/|curl\/|wget|axios|scrapy|headlesschrome|lighthouse|pagespeed|gptbot|claudebot|anthropic-ai|perplexitybot|oai-searchbot|meta-externalagent|meta-webindexer|dataforseo|ahrefs|semrush|mj12bot|dotbot|megaindex|seostar|serpstat|buzzsumo|feedly|rss|feedfetcher|arkwright|checkmarknetwork|serpcluster|nanobot|zpider|survey|monitor|scanner|fuzz|nuclei|masscan|zmap|dirbuster|nmap|sqlmap|nikto|acunetix|netsparker|qualys)/i
+
+/** 判断请求是否来自爬虫/脚本：无 UA 也视为脚本（浏览器必带 UA） */
+export function isBotRequest(request) {
+  const ua = request.headers.get('user-agent') ?? ''
+
+  return ua === '' || BOT_UA_RE.test(ua)
+}
+
+/** 爬虫早退响应：429（前端已有 FatalRequestError 的「请求过于频繁」文案处理）+ 不缓存 */
+export function botRejectResponse() {
+  return new Response(JSON.stringify({ msg: '请求过于频繁', code: 429, timestamp: Date.now() }), {
+    status: 429,
+    headers: { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' },
+  })
+}
+
 /* ================= 响应封装 ================= */
 
 /** 榜单数据消毒：剔除非对象/空白 title 条目并按 id 去重（与 src/lib/response.ts 同规则） */
@@ -299,6 +326,11 @@ export async function withCache(cacheKey, ttlMs, loader, forceRefresh = false) {
  * 47 个路由的执行骨架完全同构，路由文件只提供 cacheKey 与 loader（上游抓取 + 映射）。
  */
 export async function handleHotList(context, { cacheKey, loader }) {
+  // 爬虫早退：必须在任何缓存/回源逻辑之前（单次 ~0.1ms，对比正常执行 ~10ms）
+  if (isBotRequest(context.request)) {
+    return botRejectResponse()
+  }
+
   const cacheSeconds = resolveCacheSeconds(context.env)
 
   try {

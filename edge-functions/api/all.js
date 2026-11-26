@@ -96,7 +96,27 @@ function dynamicCacheKey(value) {
 /** 缓存窗口：代码默认 1800 与仓库 .env 一致（本端点无 env 覆盖需求，保持公式简单） */
 const AGG_WINDOW_MS = 1800 * 1000
 
-export async function onRequestGet() {
+/**
+ * 爬虫早退（与 _lib.js 的 BOT_UA_RE 同一份特征表）：/api/all 是 47 源合并的
+ * 大响应端点，爬虫高频抓取单次 CPU 成本最高，必须在入口早退
+ */
+const BOT_UA_RE =
+  /(?:bot|spider|crawl|slurp|bytespider|petalbot|yisou|datespider|okhttp|python-requests|python-urllib|aiohttp|httpx|go-http-client|java\/|curl\/|wget|axios|scrapy|headlesschrome|lighthouse|pagespeed|gptbot|claudebot|anthropic-ai|perplexitybot|oai-searchbot|meta-externalagent|meta-webindexer|dataforseo|ahrefs|semrush|mj12bot|dotbot|megaindex|seostar|serpstat|buzzsumo|feedly|rss|feedfetcher|arkwright|checkmarknetwork|serpcluster|nanobot|zpider|survey|monitor|scanner|fuzz|nuclei|masscan|zmap|dirbuster|nmap|sqlmap|nikto|acunetix|netsparker|qualys)/i
+
+/** 无 UA 也视为脚本（浏览器必带 UA） */
+const UA_EMPTY = ''
+
+export async function onRequestGet(req) {
+  const ua = req.headers.get('user-agent') ?? ''
+
+  // 爬虫早退：在任何 KV 读取之前（单次 ~0.1ms，对比正常聚合执行 ~10-25ms）
+  if (ua === UA_EMPTY || BOT_UA_RE.test(ua)) {
+    return new Response(JSON.stringify({ msg: '请求过于频繁', code: 429, timestamp: Date.now() }), {
+      status: 429,
+      headers: { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' },
+    })
+  }
+
   // KV 是命名空间绑定的全局变量；未绑定/异常时返回空 data，客户端自动回退单源路径
   if (typeof hot_kv === 'undefined' || !hot_kv) {
     return new Response(JSON.stringify({ msg: '请求成功', code: 200, data: {}, timestamp: Date.now() }), {

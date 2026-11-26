@@ -65,7 +65,13 @@ async function serveSource(name) {
   }
 
   try {
-    const context = { request: new Request(`http://127.0.0.1:${PORT}/api/${name}`), env: {} }
+    // 注入浏览器 UA：路由入口有爬虫 UA 早退闸门，本地开发请求需以正常 UA 通过
+    const context = {
+      request: new Request(`http://127.0.0.1:${PORT}/api/${name}`, {
+        headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) local-dev' },
+      }),
+      env: {},
+    }
     const response = await mod.onRequestGet(context)
     const body = await response.json()
 
@@ -112,7 +118,12 @@ async function serveAggregate() {
           return
         }
 
-        const context = { request: new Request(`http://127.0.0.1:${PORT}/api/${name}`), env: {} }
+        const context = {
+          request: new Request(`http://127.0.0.1:${PORT}/api/${name}`, {
+            headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) local-dev' },
+          }),
+          env: {},
+        }
         const response = await routes.get(name).onRequestGet(context)
         const body = await response.json()
 

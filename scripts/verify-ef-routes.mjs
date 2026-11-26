@@ -45,7 +45,7 @@ for (const file of routeFiles) {
   try {
     // 清理模块级内存缓存，确保每次都是真实回源（多路由共享 _lib 实例时尤其重要）
     const res = await mod.onRequestGet({
-      request: new Request(`https://hot.baiwumm.com/api/${route}`),
+      request: new Request(`https://hot.baiwumm.com/api/${route}`, { headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) verify' } }),
       env: {},
     })
     const body = await res.json()
