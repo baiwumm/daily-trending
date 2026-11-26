@@ -106,8 +106,10 @@ const BOT_UA_RE =
 /** 无 UA 也视为脚本（浏览器必带 UA） */
 const UA_EMPTY = ''
 
-export async function onRequestGet(req) {
-  const ua = req.headers.get('user-agent') ?? ''
+export async function onRequestGet(context) {
+  // Makers 运行时传入的是 context 对象（Request 在 context.request 里），与单源路由一致
+  const request = context.request ?? context
+  const ua = request.headers.get('user-agent') ?? ''
 
   // 爬虫早退：在任何 KV 读取之前（单次 ~0.1ms，对比正常聚合执行 ~10-25ms）
   if (ua === UA_EMPTY || BOT_UA_RE.test(ua)) {
